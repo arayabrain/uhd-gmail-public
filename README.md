@@ -1,4 +1,4 @@
-# g.Pangolin UHD speech decoding project
+# Delineating neural contributions to electroencephalogram-based speech decoding
 
 Public repository for Gmail interface papers using uhd-EEG
 

@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+notebooks/local/
+.ipynb_checkpoints
+tests.ipynb
+sandbox.ipynb
+cosine_similarity.ipynb
+gwilliams2022.ipynb
+
+# VS Code
+/.vscode/**/*
+!/.vscode/settings.json
+outputs/
+
+# Data
+data/*
+!data/.gitkeep
+
+# Run outputs and temp files
+outputs/
+tmp/
+runs/
+wandb/
+
+# Micellaneous
+*.pt
+train.sh
+*_debug*
+nohup.out
+.python-version
+*.egg-info
+*.log
+logs/*
+figures/
+*.code-workspace

@@ -1,0 +1,12 @@
+num_channels: 3
+n_class: 5
+k1: 28
+k2: 3
+F1: 71
+D: 4
+F2: 32
+p1: 6
+p2: 6
+dr1: 0.40
+dr2: 0.50
+hilbert_transform: false

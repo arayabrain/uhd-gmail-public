@@ -1,0 +1,164 @@
+config_name: config_color
+saved_data_root: data/weights # your path to save MNE raw.fif data
+
+seed: 2
+n_splits: 9
+decode_from: eeg
+
+# ==== preproc ==== #  
+dura_unit: 1.25 # sec
+no_avg: false  # default: false
+n_trial_avg: 5
+n_ch_eeg: 128
+n_ch_noise: 3
+unit_coeff: 1.0e-6
+preamp_gain : 10
+jitter: 0.1 # sec
+nlms:
+  mu: 0.1
+  w: random
+  # n_jobs: 16
+bandpass:
+  low: 2.
+  high: 118.
+car: true  # common average reference
+notch_filter: true
+bandpass_filter:
+  lower_band: 2
+  upper_band: 118
+emg_highpass:
+  apply: false
+  low: 60
+  high: 127
+wo_adapt_filt: false # default: false
+  
+# ==== Architecture ==== #
+model_name: EEGNet
+# common
+num_channels: 128
+n_class: 5
+k1: 30 # 960
+k2: 4 # 96
+F1: 16
+F2: 32
+D: 2
+p1: 2 # 40
+p2: 4 # 80
+dr1: 0.50
+dr2: 0.75
+hilbert_transform: False
+# for with mask
+### for 10-20
+channels_use:
+  - 4  # T7
+  - 17  # C5
+  - 39  # CP5
+  - 49  # FT7
+  - 60  # FC5
+  - 67  # F7
+  - 78  # F5
+  - 92  # F3
+  - 104  # FC3
+  - 117  # FC1
+# for RNN
+rnn_type: LSTM
+hidden_size: 128
+num_layers: 2
+bidirectional: True
+dropout_rate: 0.5
+last_activation: softmax
+# for CovTanSVM
+C: 1.6653738245684553 # optimized by optuna
+
+# ==== Training ==== #
+save_results: True
+test_ratio: 0.1
+normalize: false
+n_epochs: 1000
+optimizer: AdamW
+learning_rate: 1.0e-4
+eps: 1.0e-8
+weight_decay: 0.01
+scheduler:
+  apply: False
+  name: CosineAnnealingLR # CosineAnnealingLR | ReduceLROnPlateau
+  factor: 0.1
+  patience: 10
+  Tmax: 100
+batch_size: 16
+n_worekers: 0
+save_best:
+  apply: True
+  monitor: loss_val
+log_inference: True
+ensemble_methods: 
+  - mean
+  - max
+  - zscore_mean
+  - zscore_max
+  - entropy_weighted
+  - inverse_entropy_weighted
+  - majority
+
+parallel_sets: subject1-1
+subject1-1:
+  csv_dir: data/subject1/20230511
+  npy_dir: data/subject1/20230511/eeg_margin_before_preproc/20230511_backup_calibrated_1
+  csv_header: _backup_calibrated_1
+  gpu: 0
+subject1-2:
+  csv_dir: data/subject1/20230529
+  npy_dir: data/subject1/20230529/eeg_margin_before_preproc/20230529_backup_calibrated_1
+  csv_header: _backup_calibrated_1
+  gpu: 1
+subject1-3:
+  csv_dir: data/subject1/20230529
+  npy_dir: data/subject1/20230529/eeg_margin_before_preproc/20230529_backup_calibrated_2
+  csv_header: _backup_calibrated_2
+  gpu: 2
+subject2-1:
+  csv_dir: data/subject2/20230512
+  npy_dir: data/subject2/20230512/eeg_margin_before_preproc/20230512_backup_calibrated_1
+  csv_header: _backup_calibrated_1
+  gpu: 3
+subject2-2:
+  csv_dir: data/subject2/20230512
+  npy_dir: data/subject2/20230512/eeg_margin_before_preproc/20230512_backup_calibrated_2
+  csv_header: _backup_calibrated_2
+  gpu: 4
+subject2-3:
+  csv_dir: data/subject2/20230516
+  npy_dir: data/subject2/20230516/eeg_margin_before_preproc/20230516_backup_calibrated_1
+  csv_header: _backup_calibrated_1
+  gpu: 0
+subject3-1:
+  csv_dir: data/subject3/20230523
+  npy_dir: data/subject3/20230523/eeg_margin_before_preproc/20230523_backup_calibrated_1
+  csv_header: _backup_calibrated_1
+  gpu: 1
+subject3-2:
+  csv_dir: data/subject3/20230523
+  npy_dir: data/subject3/20230523/eeg_margin_before_preproc/20230523_backup_calibrated_2
+  csv_header: _backup_calibrated_2
+  gpu: 2
+subject3-3:
+  csv_dir: data/subject3/20230524
+  npy_dir: data/subject3/20230524/eeg_margin_before_preproc/20230524_backup_calibrated_1
+  csv_header: _backup_calibrated_1
+  gpu: 4
+subject3-4:
+  csv_dir: data/subject3/20230524
+  npy_dir: data/subject3/20230524/eeg_margin_before_preproc/20230524_backup_calibrated_2
+  csv_header: _backup_calibrated_2
+  gpu: 0
+
+fs : 256
+
+# Hydra options
+use_hydra_savedir: True
+hydra:
+  job:
+    chdir: True
+  sweep:
+    dir: 'outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}'
+    subdir: '${hydra.job.override_dirname}'

@@ -1,0 +1,27 @@
+num_channels: 128
+# ==== Architecture ==== #
+model_name: EEGNet_with_mask
+# common
+n_class: 5
+k1: 30 # 960
+k2: 4 # 96
+F1: 16
+F2: 32
+D: 2
+p1: 2 # 40
+p2: 4 # 80
+dr1: 0.50
+dr2: 0.75
+hilbert_transform: False
+# for with mask
+channels_use:
+  - 4  # T7
+  - 17  # C5
+  - 39  # CP5
+  - 49  # FT7
+  - 60  # FC5
+  - 67  # F7
+  - 78  # F5
+  - 92  # F3
+  - 104  # FC3
+  - 117  # FC1

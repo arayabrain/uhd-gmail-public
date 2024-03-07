@@ -1,5 +1,6 @@
 from setuptools import find_packages, setup
 
+
 def read_requirements(filename: str):
     with open(filename) as requirements_file:
         import re
@@ -22,7 +23,8 @@ def read_requirements(filename: str):
             if line.startswith("#") or len(line) <= 0:
                 continue
             requirements.append(fix_url_dependencies(line))
-    return
+    return requirements
+
 
 setup(
     name="uhd-eeg",

@@ -3,9 +3,9 @@
 Public repository for Gmail interface papers using uhd-EEG
 
 ## preparation
-1. install this repository as a pip package.
+1. install requirements package.
    ```bash
-   pip install .
+   pip install -r requirements.txt
    ```
 
 ## TODOs

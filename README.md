@@ -12,9 +12,30 @@ Public repository for Gmail interface papers using uhd-EEG
    pip install -r requirements.txt
    ```
 ## usage
-1. Train decoders. You can specify in `parallel_sets` which subjects and which sessions' data to train.
+1. Save EEG/EMG of various pretreatment processes.
+   ```bash
+   python uhd_eeg/plot_figures/make_preproc_files.py
+   ```
+2. Visualization of pre-processing pipeline (Fig. 1)
+   ```bash
+   python uhd_eeg/plot_figures/plot_preprocesssing.py
+   ```
+3. Visualization of volume of speech (Fig. 1) and RMS of EMGs (Fig. 2)
+   ```bash
+   python uhd_eeg/plot_figures/plot_rms.py
+   ```
+4. Quantify the contamination level of EMG to EEG (mutual information, Fig. 2)
+   ```bash
+   python uhd_eeg/plot_figures/plot_mis.py
+   ```
+5. Train decoders. You can specify in `parallel_sets` which subjects and which sessions' data to train.
    ```bash
    python uhd_eeg/trainers/trainer.py -m hydra/launcher=joblib parallel_sets=subject1-1,subject1-2,subject1-3
+   ```
+6. Copy the trained models and metrics to `data/`
+7. Run the inference for online data and evaluate metrics (Table 1, 2)
+   ```bash
+   python uhd_eeg/plot_figures/evaluate_accs.py
    ```
 
 ## TODOs

@@ -44,6 +44,6 @@ Public repository for Gmail interface papers using uhd-EEG
 
 ## TODOs
 
-- [ ] add usage
+- [ ] add usage for Fig. 3-5
 - [ ] check excesses and deficiencies for source codes
 - [x] add conceptual picutre

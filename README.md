@@ -33,9 +33,13 @@ Public repository for Gmail interface papers using uhd-EEG
    python uhd_eeg/trainers/trainer.py -m hydra/launcher=joblib parallel_sets=subject1-1,subject1-2,subject1-3
    ```
 6. Copy the trained models and metrics to `data/`
-7. Run the inference for online data and evaluate metrics (Table 1, 2)
+7. Run the inference for online data and evaluate metrics (Table 1, 2, Fig. S1)
    ```bash
    python uhd_eeg/plot_figures/evaluate_accs.py
+   ```
+8. Visualization of electrodes used when hypothetically reducing electrode density (Fig. S1)
+   ```bash
+   python uhd_eeg/plot_figures/show_montage_decimation.py
    ```
 
 ## TODOs

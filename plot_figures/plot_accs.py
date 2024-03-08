@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
+from scipy.stats import kendalltau
 from termcolor import cprint
 from tqdm import tqdm
 
@@ -117,7 +118,7 @@ def plot_accs_save(
     online: bool,
     offline: bool,
     additional_text: str = "",
-    subjects: List[str] = ["shun", "yasu", "rousslan"],
+    subjects: List[str] = ["subject1", "subject2", "subject3"],
 ):
     n_cv = 10
     save_path.mkdir(exist_ok=True, parents=True)
@@ -239,7 +240,7 @@ def plot_accs_decimation_save(
     yticks: List[float] = [0, 0.5, 1.0],
     baseline: float = 0.2,
     additional_text: str = "",
-    subjects: List[str] = ["shun", "yasu", "rousslan"],
+    subjects: List[str] = ["subject1", "subject2", "subject3"],
 ):
     n_cv = 10
     save_path.mkdir(exist_ok=True, parents=True)
@@ -354,7 +355,12 @@ def save_accs_table(
     for task in ["overt", "minimally overt", "covert"]:
         for model in models:
             conditions.append(f"{task}_{model}")
-    subjects_all = [["shun"], ["yasu"], ["rousslan"], ["shun", "yasu", "rousslan"]]
+    subjects_all = [
+        ["subject1"],
+        ["subject2"],
+        ["subject3"],
+        ["subject1", "subject2", "subject3"],
+    ]
     models = accs["model"].unique()
     onoff_text = "_online" if not offline else "_offline"
     table_data = np.zeros((len(subjects_all), len(conditions)))
@@ -375,7 +381,186 @@ def save_accs_table(
     table = pd.DataFrame(
         table_data,
         columns=conditions,
-        index=["shun", "yasu", "rousslan", "all"],
+        index=["subject1", "subject2", "subject3", "all"],
     )
     table.to_csv(save_path / f"{acc_type}{onoff_text}{additional_text}.csv")
     return table
+
+
+def plot_all_subjects():
+    # all subjects
+    models = [
+        "EEGNet",
+        "LSTM",
+        "CovTanSVM",
+    ]
+    additional_text = "_onlydenoised"
+    save_path = Path("figures/tables/plots/")
+    save_path.mkdir(exist_ok=True, parents=True)
+    acc_types = ["acc", "balanced_acc"]
+    onofflines = [(True, True), (True, False), (False, True)]
+    accs = get_on_off_accs(DATA_TUPLE, models)
+    for acc_type in acc_types:
+        for online, offline in onofflines:
+            plot_accs_save(accs, save_path, acc_type, online, offline, additional_text)
+
+
+def plot_each_subject():
+    # each subject
+    models = [
+        "CovTanSVM",
+        "EEGNet",
+        "LSTM",
+    ]
+    subjects = ["subject1", "subject2", "subject3"]
+    additional_text = "_onlydenoised"
+    save_path = Path("figures/tables/plots/")
+    save_path.mkdir(exist_ok=True, parents=True)
+    acc_types = ["acc", "balanced_acc"]
+    onofflines = [(True, True), (True, False), (False, True)]
+    accs = get_on_off_accs(DATA_TUPLE, models)
+    for acc_type in acc_types:
+        for online, offline in onofflines:
+            for subject in subjects:
+                plot_accs_save(
+                    accs,
+                    save_path,
+                    acc_type,
+                    online,
+                    offline,
+                    additional_text,
+                    [subject],
+                )
+
+
+def plot_channel_decimation():
+    # channel decimation
+    models = [
+        "EEGNet",
+        "EEGNet_with_mask_4ch",
+        "EEGNet_with_mask_8ch",
+        "EEGNet_with_mask_16ch",
+        "EEGNet_with_mask_32ch",
+    ]
+    save_path = Path("figures/figS1/plots/")
+    save_path.mkdir(exist_ok=True, parents=True)
+    acc_types = ["acc", "balanced_acc"]
+    onofflines = [(True, True), (True, False), (False, True)]
+    show_ratios = [True, False]
+    ylim = [0, 1]
+    yticks = [0, 0.5, 1.0]
+    accs = get_on_off_accs(DATA_TUPLE, models)
+    for acc_type in acc_types:
+        for online, offline in onofflines:
+            for show_ratio in show_ratios:
+                if show_ratio:
+                    yticks_auto = True
+                    baseline = 1
+                else:
+                    yticks_auto = False
+                    baseline = 0.2
+                plot_accs_decimation_save(
+                    accs,
+                    save_path,
+                    acc_type,
+                    online,
+                    offline,
+                    show_ratio,
+                    yticks_auto,
+                    ylim,
+                    yticks,
+                    baseline,
+                )
+
+
+def save_acc_tables_across_models():
+    # save accs table
+    models = [
+        "EEGNet",
+        "LSTM",
+        "CovTanSVM",
+    ]
+    additional_text = "_onlydenoised"
+    save_path = Path("figures/tables/data/")
+    save_path.mkdir(exist_ok=True, parents=True)
+    acc_types = ["acc", "balanced_acc"]
+    accs = get_on_off_accs(DATA_TUPLE, models)
+    for acc_type in acc_types:
+        for offline in [True, False]:
+            table = save_accs_table(
+                accs, save_path, acc_type, offline, models, additional_text
+            )
+
+
+def save_acc_tables_channel_decimation():
+    # table
+    models = [
+        "EEGNet_with_mask_4ch",
+        "EEGNet_with_mask_8ch",
+        "EEGNet_with_mask_16ch",
+        "EEGNet_with_mask_32ch",
+        "EEGNet",
+    ]
+    subjects = ["subject1", "subject2", "subject3", "all"]
+    tasks = ["overt", "minimally overt", "covert"]
+    models = [
+        "EEGNet_with_mask_4ch",
+        "EEGNet_with_mask_8ch",
+        "EEGNet_with_mask_16ch",
+        "EEGNet_with_mask_32ch",
+        "EEGNet",
+    ]
+    n_chs = [4, 8, 16, 32, 128]
+    additional_text = "_onlydenoised"
+    acc_type = "balanced_acc"
+    accs = get_on_off_accs(DATA_TUPLE, models)
+    for offline in [True, False]:
+        onoff_text = "_online" if not offline else "_offline"
+        save_path = Path("figures/figS1/data/")
+        save_path.mkdir(exist_ok=True, parents=True)
+        table = save_accs_table(
+            accs, save_path, acc_type, offline, models, additional_text
+        )
+
+        save_path = Path("figures/figS1/stats/")
+        save_path.mkdir(exist_ok=True, parents=True)
+        stats_df = pd.DataFrame(columns=["subject", "task", "tau", "p_value"])
+        for subject in subjects:
+            for task in tasks:
+                bal_accs = []
+                for model in models:
+                    bal_accs.append(table[f"{task}_{model}"][subject])
+                tau, p_value = kendalltau(n_chs, bal_accs)
+                cprint(
+                    f"{subject} {task} tau: {tau:.2f} p_value: {p_value:.2f}", "green"
+                )
+                stats_df = pd.concat(
+                    [
+                        stats_df,
+                        pd.DataFrame(
+                            {
+                                "subject": subject,
+                                "task": task,
+                                "tau": tau,
+                                "p_value": p_value,
+                            },
+                            index=[0],
+                        ),
+                    ]
+                )
+        stats_df.to_csv(
+            save_path
+            / f"channel_decimation_{acc_type}{onoff_text}{additional_text}_stats.csv"
+        )
+
+
+def main():
+    plot_all_subjects()
+    plot_each_subject()
+    plot_channel_decimation()
+    save_acc_tables_across_models()
+    save_acc_tables_channel_decimation()
+
+
+if __name__ == "__main__":
+    main()

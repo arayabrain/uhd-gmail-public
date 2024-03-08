@@ -27,12 +27,12 @@ def main() -> None:
         "EEGNet_with_mask_8ch",
         "EEGNet_with_mask_16ch",
         "EEGNet_with_mask_32ch",
-        "EEGNet",  # TODO fix with state_dict
-        "EEGNet_wo_adapt_filt",  # TODO fix with state_dict
-        "EMG_EEGNet",  # TODO fix with state_dict
-        "LSTM",  # TODO fix with state_dict
-        "LSTM_wo_adapt_filt",  # TODO fix with state_dict
-        "EMG_LSTM",  # TODO fix with state_dict
+        "EEGNet",
+        "EEGNet_wo_adapt_filt",
+        "EMG_EEGNet",
+        "LSTM",
+        "LSTM_wo_adapt_filt",
+        "EMG_LSTM",
         "CovTanSVM",
         "CovTanSVM_wo_adapt_filt",
         "EMG_CovTanSVM",

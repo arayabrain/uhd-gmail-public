@@ -10,14 +10,15 @@ import numpy as np
 import torch
 from hydra import compose, initialize
 from natsort import natsorted
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from scipy.stats import zscore
 from sklearn.metrics import balanced_accuracy_score
 from termcolor import cprint
 
 from plot_figures.src.surrogates import aaft, ft, iaaft
 from uhd_eeg.datasets.DatasetUHD import EEGDataset, EMGDataset
-from uhd_eeg.models.CNN.EEGNet import EEGNet
+from uhd_eeg.models.CNN.EEGNet import EEGNet, EEGNet_with_mask
+from uhd_eeg.models.RNN.RNN import MultiLayerRNN
 
 N_CV = 10
 DATA_ROOT = Path("data/")
@@ -42,22 +43,52 @@ def eval_net(
     Returns:
         np.ndarray: predicted labels
     """
+    if "EMG" in model_path:
+        eval_emg = True
+    else:
+        eval_emg = False
     if is_svm:
         net = dill.load(open(model_path, "rb"))
     else:
-        try:  # TODO fix with state_dict
-            net = torch.load(
-                model_path,
-                map_location=device,
+        with initialize(config_path="../../configs/trainer"):
+            args = compose("config_color_combine.yaml")
+        if eval_emg:
+            OmegaConf.set_struct(args, False)
+            OmegaConf.update(args, "decode_from", "emg", merge=True)
+            OmegaConf.update(args, "num_channels", 3, merge=True)
+            OmegaConf.set_struct(args, True)
+        duration = 320
+        if "EEGNet_with_mask" in model_path:
+            net = EEGNet_with_mask(args, T=duration)
+        elif "LSTM" in model_path:
+            rnn_type = "LSTM"
+            net = MultiLayerRNN(
+                input_size=args.num_channels,
+                hidden_size=args.hidden_size,
+                num_layers=args.num_layers,
+                output_size=args.n_class,
+                rnn_type=rnn_type,
+                bidirectional=args.bidirectional,
+                dropout_rate=args.dropout_rate,
+                last_activation=args.last_activation,
             )
-            net.eval()
-        except:
-            with initialize(config_path="../../configs/trainer"):
-                args = compose("config_color_combine.yaml")
-            net = EEGNet(args, T=320)
-            net.load_state_dict(torch.load(model_path, map_location=device))
-            net.to(device)
-            net.eval()
+        elif "GRU" in model_path:
+            rnn_type = "GRU"
+            net = MultiLayerRNN(
+                input_size=args.num_channels,
+                hidden_size=args.hidden_size,
+                num_layers=args.num_layers,
+                output_size=args.n_class,
+                rnn_type=rnn_type,
+                bidirectional=args.bidirectional,
+                dropout_rate=args.dropout_rate,
+                last_activation=args.last_activation,
+            )
+        else:
+            net = EEGNet(args, T=duration)
+        net.load_state_dict(torch.load(model_path, map_location=device))
+        net.to(device)
+        net.eval()
 
     preds = []
     for _, pt_path in enumerate(natsorted(list(Path(pt_dir).glob("*.pt")))):
@@ -120,6 +151,10 @@ def eval_ensemble(
     Returns:
         np.ndarray: predicted labels
     """
+    if "EMG" in model_paths[0]:
+        eval_emg = True
+    else:
+        eval_emg = False
     nets = []
     if is_svm:
         for model_path in model_paths:
@@ -127,19 +162,45 @@ def eval_ensemble(
             nets.append(net)
     else:
         for model_path in model_paths:
-            try:
-                net = torch.load(
-                    model_path,
-                    map_location=device,
+            with initialize(config_path="../../configs/trainer"):
+                args = compose("config_color_combine.yaml")
+            if eval_emg:
+                OmegaConf.set_struct(args, False)
+                OmegaConf.update(args, "decode_from", "emg", merge=True)
+                OmegaConf.update(args, "num_channels", 3, merge=True)
+                OmegaConf.set_struct(args, True)
+            duration = 320
+            if "EEGNet_with_mask" in model_paths[0]:
+                net = EEGNet_with_mask(args, T=duration)
+            elif "LSTM" in model_paths[0]:
+                rnn_type = "LSTM"
+                net = MultiLayerRNN(
+                    input_size=args.num_channels,
+                    hidden_size=args.hidden_size,
+                    num_layers=args.num_layers,
+                    output_size=args.n_class,
+                    rnn_type=rnn_type,
+                    bidirectional=args.bidirectional,
+                    dropout_rate=args.dropout_rate,
+                    last_activation=args.last_activation,
                 )
-                net.eval()
-            except:
-                with initialize(config_path="../../configs/trainer"):
-                    args = compose("config_color_combine.yaml")
-                net = EEGNet(args, T=320)
-                net.load_state_dict(torch.load(model_path, map_location=device))
-                net.to(device)
-                net.eval()
+            elif "GRU" in model_paths[0]:
+                rnn_type = "GRU"
+                net = MultiLayerRNN(
+                    input_size=args.num_channels,
+                    hidden_size=args.hidden_size,
+                    num_layers=args.num_layers,
+                    output_size=args.n_class,
+                    rnn_type=rnn_type,
+                    bidirectional=args.bidirectional,
+                    dropout_rate=args.dropout_rate,
+                    last_activation=args.last_activation,
+                )
+            else:
+                net = EEGNet(args, T=duration)
+            net.load_state_dict(torch.load(model_path, map_location=device))
+            net.to(device)
+            net.eval()
             nets.append(net)
 
     # print(f'num models = {len(nets)}')

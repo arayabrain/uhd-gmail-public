@@ -62,11 +62,11 @@ class EEGNet(nn.Module):
             nn.BatchNorm2d(args.F1),
         )
         # TODO uncomment hilbert_transform
-        # self.hilbert_transform = args.hilbert_transform
-        # if self.hilbert_transform:
-        #     self.hilbert_layer = nn.Sequential(
-        #         HilbertTransform(), Abs()
-        #     )  # Compute the spectral power using the Hilbert transform; note that this is just one of the features used in HTNet, and not used in this paper
+        self.hilbert_transform = args.hilbert_transform
+        if self.hilbert_transform:
+            self.hilbert_layer = nn.Sequential(
+                HilbertTransform(), Abs()
+            )  # Compute the spectral power using the Hilbert transform; note that this is just one of the features used in HTNet, and not used in this paper
 
         self.conv2 = nn.Sequential(
             nn.Conv2d(
@@ -112,8 +112,8 @@ class EEGNet(nn.Module):
         """
         x = self.conv1(x)
         # TODO uncomment hilbert_transform
-        # if self.hilbert_transform:
-        #     x = self.hilbert_layer(x)
+        if self.hilbert_transform:
+            x = self.hilbert_layer(x)
         x = self.conv2(x)
         x = self.conv3(x)
         x = x.view(-1, self.n_dim)
@@ -134,8 +134,8 @@ class EEGNet(nn.Module):
 
         x = self.conv1(x)
         # TODO uncomment hilbert_transform
-        # if self.hilbert_transform:
-        #     x = self.hilbert_layer(x)
+        if self.hilbert_transform:
+            x = self.hilbert_layer(x)
         x = self.conv2(x)
         x = self.conv3(x)
 

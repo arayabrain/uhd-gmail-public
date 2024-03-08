@@ -306,12 +306,12 @@ def fit_decoder_CV(args: DictConfig, dataset: EEGDataset | EMGDataset) -> None:
                     net = copy.deepcopy(net_best)
                 if args.use_hydra_savedir:  # TODO fix with state_dict
                     torch.save(
-                        net,
+                        net.state_dict(),
                         f"model_weight_{args.config_name}_N{args.n_trial_avg}_cv{cv}.pth",
                     )
                 else:  # TODO fix with state_dict
                     torch.save(
-                        net,
+                        net.state_dict(),
                         f"{dir_save}/model_weight_{args.config_name}_N{args.n_trial_avg}_cv{cv}.pth",
                     )
     if args.model_name == "CovTanSVM":

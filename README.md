@@ -6,7 +6,7 @@
 
 Public repository for Gmail interface papers using uhd-EEG<br> 
 Author: Motoshige Sato<sup>1</sup>, Yasuo Kabe<sup>1</sup>, Sensho Nobe<sup>1</sup>, Akito Yoshida<sup>1</sup>, Masakazu Inoue<sup>1</sup>, Mayumi Shimizu<sup>1</sup>, Kenichi Tomeoka<sup>1</sup>, Shuntaro Sasai<sup>1*</sup><br> 
-<sup>1</sup>[Araya Inc.](https://www.araya.org/en/){:target="_blank"}
+<sup>1</sup><a href="https://www.araya.org/en/"  target="_blank" rel="noopener noreferrer">Araya Inc.</a>
 
 ## preparation
 1. Install requirements package.

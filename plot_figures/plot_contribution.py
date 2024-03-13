@@ -32,452 +32,6 @@ from plot_figures.src.load_ig import load_igs
 from plot_figures.src.weighted_corr import WeightedCorr
 
 
-def imshow_each_ig_map(
-    subjects: List[str],
-    tasks: List[str],
-    models: List[str],
-    colors: List[str],
-    igs_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    correct_decode: bool,
-    clip: float,
-    save_path: Path,
-) -> None:
-    """imshow each ig map
-
-    Args:
-        subjects (List[str]): subjects
-        tasks (List[str]): tasks
-        models (List[str]): models
-        colors (List[str]): colors
-        igs_all (List[np.ndarray]): ig
-        igs_table_all (pd.DataFrame): ig tabele
-        correct_decode (bool): correct decode
-        clip (float): clip
-        save_path (Path): save path
-    """
-    for subject in subjects:
-        for task in tasks:
-            for model in models:
-                for label, color in enumerate(tqdm(colors)):
-                    idx_target = (
-                        (igs_table_all["subject"] == subject)
-                        & (igs_table_all["model"] == model)
-                        & (igs_table_all["task"] == task)
-                        & (igs_table_all["label"] == label)
-                        & (igs_table_all["correct_decode"] == correct_decode)
-                    )
-                    if idx_target.sum() == 0:
-                        cprint(
-                            (
-                                f"no data for sub: {subject}, label: {label}, "
-                                f"task: {task}, correct_decode"
-                            ),
-                            "yellow",
-                        )
-                        continue
-                    cprint(
-                        (
-                            f"sub: {subject}, label: {label}, task: {task}"
-                            f" sum {idx_target.sum()}"
-                        ),
-                        "cyan",
-                    )
-                    igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_all))
-                    igs_tmp = np.abs(igs_tmp)
-                    if len(igs_tmp.shape) == 3:
-                        mes = np.mean(igs_tmp, axis=(1, 2), keepdims=True)
-                        sds = np.std(igs_tmp, axis=(1, 2), keepdims=True)
-                        igs_tmp = (igs_tmp - mes) / sds
-                        igs_tmp = np.clip(igs_tmp, -clip, clip)
-                        ig_tmp = np.mean(igs_tmp, axis=0)
-                    else:
-                        ig_tmp = igs_tmp
-                    me = np.mean(ig_tmp)
-                    sd = np.std(ig_tmp)
-                    ig_tmp = (ig_tmp - me) / sd
-                    ig_tmp = np.clip(ig_tmp, -clip, clip)
-
-                    plt.figure(figsize=(8 * cm_to_inch, 5 * cm_to_inch))
-                    plt.imshow(ig_tmp, cmap="bwr", aspect="auto")
-                    plt.axis("off")
-                    plt.savefig(
-                        save_path / f"montage_{subject}_{task}_{model}_{color}.png"
-                    )
-                    plt.clf()
-                    plt.close()
-
-
-def plot_ig_temporal(
-    igs_norm_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    colors_rgb: List[tuple],
-    models: List[str],
-    tasks: List[str],
-    clip: float,
-    save_path: Path,
-) -> None:
-    """plot ig temporal
-
-    Args:
-        igs_norm_all (List[np.ndarray]): ig norm
-        igs_table_all (pd.DataFrame): ig table
-        colors_rgb (List[tuple]): color rgb
-        models (List[str]): models
-        tasks (List[str]): tasks
-        clip (float): clip
-        save_path (Path): save path
-    """
-    for model in models:
-        for task in tasks:
-            plt.figure(figsize=(6 * cm_to_inch, 3.5 * cm_to_inch))
-            for label, color in enumerate(colors_rgb):
-                idx_target = (
-                    (igs_table_all["model"] == model)
-                    & (igs_table_all["label"] == label)
-                    & (igs_table_all["task"] == task)
-                )
-                if idx_target.sum() == 0:
-                    cprint(
-                        (
-                            f"no data for model: {model}, color: {color}, "
-                            f"task: {task}"
-                        ),
-                        "yellow",
-                    )
-                    continue
-                cprint(
-                    (
-                        f"model: {model}, color: {color}, task: {task} "
-                        f"sum {idx_target.sum()}"
-                    ),
-                    "cyan",
-                )
-                igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_norm_all))
-                igs_tmp = np.mean(igs_tmp, axis=(0, 1))
-                plt.plot(igs_tmp, color=color, label=f"{model} {task}")
-            plt.xlim(0, 320)
-            plt.ylim(-0.75, 0.75)
-            plt.axis("off")
-            plt.savefig(save_path / f"igs_temporal_{model}_{task}.png")
-            plt.clf()
-            plt.close()
-
-
-def plot_exsample(
-    igs_norm_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    colors_rgb: List[tuple],
-    subject: str,
-    model: str,
-    task: str,
-    label: int,
-    correct_decode: bool,
-    clip: float,
-    save_path: Path,
-) -> None:
-    """plot ig temporal
-
-    Args:
-        igs_norm_all (List[np.ndarray]): ig norm
-        igs_table_all (pd.DataFrame): ig table
-        colors_rgb (List[tuple]): color rgb
-        siubject (str): subject
-        model (str): model
-        task (str): task
-        label (int): label
-        correct_decode (bool): correct decode
-        clip (float): clip
-        save_path (Path): save path
-    """
-    img = imread("plot_figures/montage_colorless.png")
-    coordinates = np.load("plot_figures/coordinates_colorless.npy")
-    idx_target = (
-        (igs_table_all["subject"] == subject)
-        & (igs_table_all["model"] == model)
-        & (igs_table_all["task"] == task)
-        & (igs_table_all["label"] == label)
-        & (igs_table_all["correct_decode"] == correct_decode)
-    )
-    if idx_target.sum() == 0:
-        cprint(
-            (f"no data for model: {model}, color: {label}, " f"task: {task}"),
-            "yellow",
-        )
-    cprint(
-        (f"model: {model}, color: {label}, task: {task} " f"sum {idx_target.sum()}"),
-        "cyan",
-    )
-    igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_norm_all))
-    igs_tmp = np.mean(igs_tmp, axis=0)
-    plt.figure(figsize=(8 * cm_to_inch, 5 * cm_to_inch))
-    plt.imshow(igs_tmp, cmap="bwr", aspect="auto")
-    plt.axis("off")
-    plt.savefig(save_path / "ig_map_esample.png")
-    plt.clf()
-    plt.close()
-
-    plt.figure(figsize=(8 * cm_to_inch, 1.5 * cm_to_inch))
-    plt.plot(igs_tmp.mean(axis=0), color=colors_rgb[label], label=f"{model} {task}")
-    plt.xlim(0, 320)
-    plt.axis("off")
-    plt.savefig(save_path / "ig_temporal_example.png")
-    plt.clf()
-    plt.close()
-
-    plt.figure(figsize=(1.5 * cm_to_inch, 5 * cm_to_inch))
-    plt.plot(
-        igs_tmp.mean(axis=1),
-        range(igs_tmp.shape[0]),
-        color=colors_rgb[label],
-        label=f"{model} {task}",
-    )
-    plt.ylim(0, 128)
-    plt.axis("off")
-    plt.savefig(save_path / "ig_spatial_example.png")
-    plt.clf()
-    plt.close()
-
-    plt.figure(figsize=(2.5 * cm_to_inch, 2.5 * cm_to_inch))
-    plt.imshow(img)
-    plt.scatter(
-        coordinates[:, 0],
-        coordinates[:, 1],
-        s=1.5,
-        c=igs_tmp.mean(axis=1),
-        cmap="plasma",
-        vmin=0,
-        linewidths=0,
-    )
-    # plt.colorbar()
-    plt.axis("off")
-    plt.savefig(save_path / "ig_spatial_example_montage.png")
-    plt.clf()
-    plt.close()
-
-    norm = mpl.colors.Normalize(vmin=0, vmax=np.max(igs_tmp.mean(axis=1)))
-    _, cbar = plt.subplots(figsize=(0.5, 2.5))
-    cmap = plt.get_cmap("plasma")
-    mpl.colorbar.Colorbar(
-        ax=cbar,
-        mappable=mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-        orientation="vertical",
-    ).ax.set_frame_on(False)
-    plt.savefig(save_path / "ig_colorbar_exsample.png", bbox_inches="tight")
-
-
-def show_corr_mat(
-    igs_norm_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    colors_rgb: List[tuple],
-    tasks: List[str],
-    save_path: Path,
-    model: str = "EEGNet",
-    correct_decode: bool = True,
-) -> None:
-    """show corr mat
-
-    Args:
-        igs_norm_all (List[np.ndarray]): igs nbrmalized
-        igs_table_all (pd.DataFrame): igs table
-        colors_rgb (List[tuple]): colors rgb
-        tasks (List[str]): tasks
-        save_path (Path): save path
-        model (str, optional): model name. Defaults to "EEGNet".
-        correct_decode (bool, optional): correct decode or not. Defaults to True.
-    """
-    for task in tasks:
-        plt.figure(figsize=(7 * cm_to_inch, 7 * cm_to_inch))
-        contribution_electrodes = []
-        for label, color in enumerate(colors_rgb):
-            idx_target = (
-                (igs_table_all["model"] == model)
-                & (igs_table_all["task"] == task)
-                & (igs_table_all["label"] == label)
-                & (igs_table_all["correct_decode"] == correct_decode)
-            )
-            if idx_target.sum() == 0:
-                cprint(
-                    (f"no data for model: {model}, color: {color}, " f"task: {task}"),
-                    "yellow",
-                )
-                continue
-            cprint(
-                (
-                    f"model: {model}, color: {color}, task: {task} "
-                    f"sum {idx_target.sum()}"
-                ),
-                "cyan",
-            )
-            igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_norm_all))
-            igs_tmp = np.mean(igs_tmp, axis=(0, 2))
-            contribution_electrodes.append(igs_tmp)
-        contribution_electrodes = np.array(contribution_electrodes)
-        corr_mat = np.corrcoef(contribution_electrodes)
-        for i in range(corr_mat.shape[0]):
-            corr_mat[i, i] = np.nan
-        plt.imshow(corr_mat, cmap="bwr", vmin=0, vmax=1)
-        plt.colorbar()
-        plt.gca().spines["top"].set_visible(True)
-        plt.gca().spines["right"].set_visible(True)
-        # plt.axis("off")
-        plt.savefig(save_path / f"corr_mat_{model}_{task}.png")
-        plt.clf()
-        plt.close()
-
-
-def imshow_each_ig_montage(
-    tasks: List[str],
-    colors: List[str],
-    igs_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    correct_decode: bool,
-    clip: float,
-    save_path: Path,
-    model: str = "EEGNet",
-    cmax: float = 2.0,
-    logscale: bool = False,
-) -> None:
-    """imshow each ig map
-
-    Args:
-        tasks (List[str]): tasks
-        colors (List[str]): colors
-        igs_all (List[np.ndarray]): ig
-        igs_table_all (pd.DataFrame): ig tabele
-        correct_decode (bool): correct decode
-        clip (float): clip
-        save_path (Path): save path
-        model (str, optional): model name. Defaults to "EEGNet".
-        cmax (float, optional): max value of colorbar. Defaults to 2.0.
-        logscale (bool, optional): logscale or not. Defaults to False.
-    """
-    img = imread("plot_figures/montage_colorless.png")
-    coordinates = np.load("plot_figures/coordinates_colorless.npy")
-    if logscale:
-        norm = LogNorm()
-        kwargs = {
-            "cmap": "viridis",
-            "linewidths": 0,
-            "norm": norm,
-        }
-    else:
-        kwargs = {
-            "cmap": "viridis",
-            "linewidths": 0,
-            "vmin": -cmax,
-            "vmax": cmax,
-        }
-    for task in tasks:
-        for label, color in enumerate(tqdm(colors)):
-            idx_target = (
-                (igs_table_all["model"] == model)
-                & (igs_table_all["task"] == task)
-                & (igs_table_all["label"] == label)
-                & (igs_table_all["correct_decode"] == correct_decode)
-            )
-            if idx_target.sum() == 0:
-                cprint(
-                    (f"no data for label: {label}, " f"task: {task}, correct_decode"),
-                    "yellow",
-                )
-                continue
-            cprint(
-                (f"label: {label}, task: {task}" f" sum {idx_target.sum()}"),
-                "cyan",
-            )
-            igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_all))
-            mean_igs_tmp = igs_tmp.mean(axis=2)
-            mean_ig = zscore(mean_igs_tmp.mean(axis=0))
-            sd_ig = zscore(-mean_igs_tmp.std(axis=0, ddof=1))
-            if logscale:
-                mean_ig -= mean_ig.min() + 1e-5
-                sd_ig -= sd_ig.min() + 1e-5
-
-            plt.figure(figsize=(3 * cm_to_inch, 3 * cm_to_inch))
-            plt.imshow(img)
-            plt.scatter(
-                coordinates[:, 0],
-                coordinates[:, 1],
-                s=5,
-                c=mean_ig,
-                **kwargs,
-            )
-            # plt.colorbar()
-            plt.axis("off")
-            (save_path / "montage").mkdir(exist_ok=True, parents=True)
-            plt.savefig(
-                save_path / "montage" / f"mean_montage_{task}_{color}_{model}.png"
-            )
-            plt.clf()
-            plt.close()
-
-            plt.figure(figsize=(3 * cm_to_inch, 3 * cm_to_inch))
-            plt.imshow(img)
-            plt.scatter(
-                coordinates[:, 0],
-                coordinates[:, 1],
-                s=5,
-                c=sd_ig,
-                **kwargs,
-            )
-            # plt.colorbar()
-            plt.axis("off")
-            plt.savefig(
-                save_path / "montage" / f"minus_sd_montage_{task}_{color}_{model}.png",
-            )
-            plt.clf()
-            plt.close()
-    for task in tasks:
-        idx_target = (
-            (igs_table_all["model"] == model)
-            & (igs_table_all["task"] == task)
-            & (igs_table_all["correct_decode"] == correct_decode)
-        )
-        if idx_target.sum() == 0:
-            cprint(f"task: {task}, correct_decode", "yellow")
-            continue
-        cprint((f"task: {task}" f" sum {idx_target.sum()}"), "cyan")
-        igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_all))
-        mean_igs_tmp = igs_tmp.mean(axis=2)
-        mean_ig = zscore(mean_igs_tmp.mean(axis=0))
-        sd_ig = zscore(-mean_igs_tmp.std(axis=0, ddof=1))
-        if logscale:
-            mean_ig -= mean_ig.min() + 1e-5
-            sd_ig -= sd_ig.min() + 1e-5
-        plt.figure(figsize=(3 * cm_to_inch, 3 * cm_to_inch))
-        plt.imshow(img)
-        plt.scatter(
-            coordinates[:, 0],
-            coordinates[:, 1],
-            s=5,
-            c=mean_ig,
-            **kwargs,
-        )
-        # plt.colorbar()
-        plt.axis("off")
-        plt.savefig(save_path / "montage" / f"all_mean_montage_{task}_{model}.png")
-        plt.clf()
-        plt.close()
-
-        plt.figure(figsize=(3 * cm_to_inch, 3 * cm_to_inch))
-        plt.imshow(img)
-        plt.scatter(
-            coordinates[:, 0],
-            coordinates[:, 1],
-            s=5,
-            c=sd_ig,
-            **kwargs,
-        )
-        # plt.colorbar()
-        plt.axis("off")
-        plt.savefig(
-            save_path / "montage" / f"all_minus_sd_montage_{task}.png",
-        )
-        plt.clf()
-        plt.close()
-
-
 def imshow_each_ig_montage_representative(
     tasks: List[str],
     colors: List[str],
@@ -486,7 +40,6 @@ def imshow_each_ig_montage_representative(
     eegs_all: List[np.ndarray],
     correct_decode: bool,
     clip: float,
-    save_path: Path,
     model: str = "EEGNet",
     cmax: float = 2.0,
     logscale: bool = False,
@@ -501,7 +54,6 @@ def imshow_each_ig_montage_representative(
         eegs_all (List[np.ndarray]): eeg
         correct_decode (bool): correct decode
         clip (float): clip
-        save_path (Path): save path
         model (str, optional): model name. Defaults to "EEGNet".
         cmax (float, optional): max value of colorbar. Defaults to 2.0.
         logscale (bool, optional): logscale or not. Defaults to False.
@@ -585,19 +137,20 @@ def imshow_each_ig_montage_representative(
             )
             # plt.colorbar()
             plt.axis("off")
-            (save_path / "representative").mkdir(exist_ok=True, parents=True)
-            plt.savefig(
-                save_path
-                / "representative"
-                / f"mean_montage_{task}_{color}_{model}.png"
-            )
+            for save_path in [Path("figures/fig3"), Path("figures/fig4")]:
+                (save_path / "representative").mkdir(exist_ok=True, parents=True)
+                plt.savefig(
+                    save_path
+                    / "representative"
+                    / f"mean_montage_{task}_{color}_{model}.png"
+                )
             plt.clf()
             plt.close()
 
             plt.figure(figsize=(3 * cm_to_inch, 3 * cm_to_inch))
             n_ch = representative_eeg.shape[0]
             representative_eeg = zscore(representative_eeg, axis=1)
-            representative_eeg = np.clip(representative_eeg, -5, 5)
+            representative_eeg = np.clip(representative_eeg, -clip, clip)
             for ch in range(n_ch):
                 plt.plot(
                     representative_eeg[ch] - ch * 5,
@@ -605,7 +158,8 @@ def imshow_each_ig_montage_representative(
                     linewidth=0.1,
                 )
             plt.axis("off")
-            plt.savefig(save_path / "representative" / f"eeg_{task}_{color}.png")
+            for save_path in [Path("figures/fig3"), Path("figures/fig4")]:
+                plt.savefig(save_path / "representative" / f"eeg_{task}_{color}.png")
             plt.clf()
             plt.close()
 
@@ -614,7 +168,8 @@ def imshow_each_ig_montage_representative(
                 representative_ig_mat, cmap="viridis", aspect="auto", vmin=-5, vmax=5
             )
             plt.axis("off")
-            plt.savefig(save_path / "representative" / f"ig_mat_{task}_{color}.png")
+            for save_path in [Path("figures/fig3"), Path("figures/fig4")]:
+                plt.savefig(save_path / "representative" / f"ig_mat_{task}_{color}.png")
             plt.clf()
             plt.close()
 
@@ -630,7 +185,10 @@ def imshow_each_ig_montage_representative(
                 vmax=5,
             )
             plt.axis("off")
-            plt.savefig(save_path / "representative" / f"ig_timeavg_{task}_{color}.png")
+            for save_path in [Path("figures/fig3"), Path("figures/fig4")]:
+                plt.savefig(
+                    save_path / "representative" / f"ig_timeavg_{task}_{color}.png"
+                )
             plt.clf()
             plt.close()
 
@@ -646,9 +204,10 @@ def imshow_each_ig_montage_representative(
                 vmax=5,
             )
             plt.axis("off")
-            plt.savefig(
-                save_path / "representative" / f"ig_spatialavg_{task}_{color}.png"
-            )
+            for save_path in [Path("figures/fig3"), Path("figures/fig4")]:
+                plt.savefig(
+                    save_path / "representative" / f"ig_spatialavg_{task}_{color}.png"
+                )
             plt.clf()
             plt.close()
 
@@ -659,7 +218,6 @@ def imshow_diff_ig_montage(
     igs_all: List[np.ndarray],
     igs_table_all: pd.DataFrame,
     correct_decode: bool,
-    clip: float,
     save_path: Path,
     model1: str = "EEGNet",
     model2: str = "EEGNet_wo_adapt_filt",
@@ -684,7 +242,6 @@ def imshow_diff_ig_montage(
         igs_all (List[np.ndarray]): ig
         igs_table_all (pd.DataFrame): ig tabele
         correct_decode (bool): correct decode
-        clip (float): clip
         save_path (Path): save path
         model1 (str, optional): model name. Defaults to "EEGNet".
         model2 (str, optional): model name. Defaults to "EEGNet_wo_adapt_filt".
@@ -869,10 +426,10 @@ def imshow_diff_ig_montage(
                 )
                 # plt.colorbar()
                 plt.axis("off")
-                (save_path / "montage").mkdir(exist_ok=True, parents=True)
+                (save_path / "representative").mkdir(exist_ok=True, parents=True)
                 plt.savefig(
                     save_path
-                    / "montage"
+                    / "representative"
                     / f"{representative_text}_montage_{task}_{color}_{cmap}_sd{cmax}.png"
                 )
                 plt.clf()
@@ -902,6 +459,7 @@ def imshow_diff_ig_montage(
                 )
                 # plt.colorbar()
                 plt.axis("off")
+                (save_path / "montage").mkdir(exist_ok=True, parents=True)
                 plt.savefig(
                     save_path
                     / "montage"
@@ -991,6 +549,7 @@ def imshow_diff_ig_montage(
                 # plt.colorbar()
                 plt.axis("off")
                 trial_based_text = "_trial_based" if trial_based else ""
+                (save_path / "montage").mkdir(exist_ok=True, parents=True)
                 plt.savefig(
                     save_path
                     / "montage"
@@ -1044,11 +603,13 @@ def imshow_diff_ig_montage(
             ax_weight.set_title(f"weights_{idx_target0_label}")
             ax_weight.set_xlabel("channel")
             ax_weight.set_ylabel("weight")
+            save_path_s2 = Path("figures/figS2")
+            (save_path_s2 / "weights").mkdir(exist_ok=True, parents=True)
             fig_weight.savefig(
-                save_path / "montage" / f"weights_{idx_target0_label}.png"
+                save_path_s2 / "weights" / f"weights_{idx_target0_label}.png"
             )
         # save weights_all
-        # np.save(save_path / "montage" / "weights_all.npy", weights_all)
+        # np.save(save_path / "weights" / "weights_all.npy", weights_all)
     else:
         raise ValueError("corr_type must be pearson or weighted_pearson")
     avg_diffs = np.array(avg_diffs)
@@ -1123,11 +684,21 @@ def imshow_diff_ig_montage(
     )
     plt.tight_layout()
     compare_with_emgs_text = "_compare_with_emgs" if compare_with_emgs else ""
-    plt.savefig(
-        save_path
-        / "montage"
-        / f"montage_diff_corr_between_speech_{model1}_{model2}{compare_with_emgs_text}.png"
-    )
+    (save_path / "corr").mkdir(exist_ok=True, parents=True)
+    if corr_type == "pearson":
+        plt.savefig(
+            save_path
+            / "corr"
+            / f"montage_diff_corr_between_speech_{model1}_{model2}{compare_with_emgs_text}.png"
+        )
+    else:
+        save_path_s2 = Path("figures/figS2")
+        (save_path_s2 / "corr").mkdir(exist_ok=True, parents=True)
+        plt.savefig(
+            save_path_s2
+            / "corr"
+            / f"montage_diff_corr_between_speech_{corr_type}_{model1}_{model2}{compare_with_emgs_text}.png"
+        )
     plt.clf()
     plt.close()
 
@@ -1153,8 +724,13 @@ def imshow_diff_ig_montage(
                 task_j = tasks[j]
                 idx_target0_labels_i = f"{task_i}_{color}"
                 idx_target0_labels_j = f"{task_j}_{color}"
-                weight_i = weights_all[idx_target0_labels.index(idx_target0_labels_i)]
-                weight_j = weights_all[idx_target0_labels.index(idx_target0_labels_j)]
+                if corr_type == "weight_multiplied_pearson":
+                    weight_i = weights_all[
+                        idx_target0_labels.index(idx_target0_labels_i)
+                    ]
+                    weight_j = weights_all[
+                        idx_target0_labels.index(idx_target0_labels_j)
+                    ]
                 corr_mat[i, j], p_value[i, j] = corr_func(
                     (
                         color_diff[i]
@@ -1224,11 +800,19 @@ def imshow_diff_ig_montage(
         )
         # ax.set_title(color)
     plt.tight_layout()
-    plt.savefig(
-        save_path
-        / "montage"
-        / f"montage_diff_corr_between_speech_combine_colors_{model1}_{model2}.png"
-    )
+    if corr_type == "pearson":
+        plt.savefig(
+            save_path
+            / "corr"
+            / f"montage_diff_corr_between_speech_combine_colors_{model1}_{model2}.png"
+        )
+    else:
+        save_path_s2 = Path("figures/figS2")
+        plt.savefig(
+            save_path_s2
+            / "corr"
+            / f"montage_diff_corr_between_speech_combine_colors_{corr_type}_{model1}_{model2}.png"
+        )
     plt.clf()
     plt.close()
 
@@ -1294,11 +878,19 @@ def imshow_diff_ig_montage(
         )
         # ax.set_title(color)
     plt.tight_layout()
-    plt.savefig(
-        save_path
-        / "montage"
-        / f"montage_diff_corr_between_igeeg_and_miemg_{model1}_{model2}.png"
-    )
+    if corr_type == "pearson":
+        plt.savefig(
+            save_path
+            / "corr"
+            / f"montage_diff_corr_between_igeeg_and_miemg_{model1}_{model2}.png"
+        )
+    else:
+        save_path_s2 = Path("figures/figS2")
+        plt.savefig(
+            save_path_s2
+            / "corr"
+            / f"montage_diff_corr_between_igeeg_and_miemg_{corr_type}_{model1}_{model2}.png"
+        )
     plt.clf()
     plt.close()
 
@@ -1394,7 +986,9 @@ def imshow_diff_ig_montage(
             )
             # ax.set_title(color)
     plt.tight_layout()
-    plt.savefig(save_path / "montage" / f"mi_emgs_corr_between_tasks.png")
+    save_path_s2 = Path("figures/figS2")
+    (save_path_s2 / "corr").mkdir(exist_ok=True, parents=True)
+    plt.savefig(save_path_s2 / "corr" / f"mi_emgs_pearsoncorr_between_tasks.png")
     plt.clf()
     plt.close()
 
@@ -1405,7 +999,6 @@ def imshow_combine_ig_montage(
     igs_all: List[np.ndarray],
     igs_table_all: pd.DataFrame,
     correct_decode: bool,
-    clip: float,
     save_path: Path,
     model: str = "EEGNet",
     cmax: float = 2.0,
@@ -1424,7 +1017,6 @@ def imshow_combine_ig_montage(
         igs_all (List[np.ndarray]): ig
         igs_table_all (pd.DataFrame): ig tabele
         correct_decode (bool): correct decode
-        clip (float): clip
         save_path (Path): save path
         model (str, optional): model name. Defaults to "EEGNet".
         cmax (float, optional): max value of colorbar. Defaults to 2.0.
@@ -1786,467 +1378,6 @@ def imshow_combine_ig_montage(
         )
         plt.clf()
         plt.close()
-
-
-def plot_ig_eeg_emg_speech_temporal(
-    igs_norm_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    eegs_norm_all: List[np.ndarray],
-    eegs_table_all: pd.DataFrame,
-    eegs_wo_adapt_filt_norm_all: List[np.ndarray],
-    emgs_norm_all: List[np.ndarray],
-    speeches_norm_all: List[np.ndarray],
-    colors: List[tuple],
-    models: List[str],
-    tasks: List[str],
-    clip: float,
-    save_path: Path,
-    ephys_norm_type: str = "mean",
-    top_k: int = 10,
-) -> None:
-    """plot ig temporal
-
-    Args:
-        igs_norm_all (List[np.ndarray]): ig norm
-        igs_table_all (pd.DataFrame): ig table
-        eegs_norm_all (List[np.ndarray]): eeg norm
-        eegs_table_all (pd.DataFrame): eeg table
-        eegs_wo_adapt_filt_norm_all (List[np.ndarray]): eeg w/o adapt filt norm
-        emgs_norm_all (List[np.ndarray]): emg norm
-        speeches_norm_all (List[np.ndarray]): speech norm
-        colors (List[tuple]): color
-        models (List[str]): models
-        tasks (List[str]): tasks
-        clip (float): clip
-        save_path (Path): save path
-        ephys_norm_type (str, optional): ephys norm type. Defaults to "mean".
-        top_k (int, optional): top k. Defaults to 10.
-    """
-    jaccard_indices = np.ones((len(tasks), len(colors), 7, 7))
-    for task in tasks:
-        for label, color in enumerate(colors):
-            idx_color = 0
-            plt.figure(figsize=(24 * cm_to_inch, 14 * cm_to_inch))
-            signals = []
-            for model in models:
-                idx_target = (
-                    (igs_table_all["model"] == model)
-                    & (igs_table_all["label"] == label)
-                    & (igs_table_all["task"] == task)
-                )
-                idx_ephys_target = (eegs_table_all["label"] == label) & (
-                    eegs_table_all["task"] == task
-                )
-                if idx_target.sum() == 0:
-                    cprint(
-                        (
-                            f"no data for model: {model}, color: {color}, "
-                            f"task: {task}"
-                        ),
-                        "yellow",
-                    )
-                    continue
-                cprint(
-                    (
-                        f"model: {model}, color: {color}, task: {task} "
-                        f"sum {idx_target.sum()}"
-                    ),
-                    "cyan",
-                )
-                igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_norm_all))
-                igs_tmp_spatial = np.mean(igs_tmp, axis=(0, 2))
-                igs_tmp = np.mean(igs_tmp, axis=0)
-                if "EMG" in model:
-                    type_ = "emg"
-                    ephys = np.array(
-                        itemgetter(*np.where(idx_ephys_target)[0])(emgs_norm_all)
-                    )
-                    ephys = zscore(ephys, axis=2)
-                elif "wo_adapt_filt" in model:
-                    type_ = "eeg w/o adapt filt"
-                    ephys = np.array(
-                        itemgetter(*np.where(idx_ephys_target)[0])(
-                            eegs_wo_adapt_filt_norm_all
-                        )
-                    )
-                    igs_tmp = np.mean(igs_tmp, axis=0)
-                else:
-                    type_ = "eeg w/ adapt filt"
-                    ephys = np.array(
-                        itemgetter(*np.where(idx_ephys_target)[0])(eegs_norm_all)
-                    )
-                    igs_tmp = np.mean(igs_tmp, axis=0)
-                cprint(ephys.shape, "cyan")
-                ephys = np.mean(ephys, axis=0)
-                if type_ == "emg":
-                    for idx_emg, (ig_emg, emg) in enumerate(zip(igs_tmp, ephys)):
-                        if idx_emg == 0:
-                            emg_name = "EOG"
-                        elif idx_emg == 1:
-                            emg_name = "EMG_upper"
-                        elif idx_emg == 2:
-                            emg_name = "EMG_lower"
-                        else:
-                            raise ValueError("idx_emg must be 0, 1 or 2")
-                        plt.plot(
-                            ig_emg,
-                            label=f"ig_{emg_name}_{type_}",
-                            linewidth=1.5,
-                            c=mpl.cm.tab20(idx_color),
-                        )
-                        idx_color += 1
-                        plt.plot(
-                            emg,
-                            label=f"{emg_name}_{type_}",
-                            linewidth=1.5,
-                            c=mpl.cm.tab20(idx_color),
-                        )
-                        idx_color += 1
-                        signals.append(ig_emg)
-                        signals.append(emg)
-                else:
-                    if ephys_norm_type == "mean":
-                        ephys = zscore(ephys.mean(axis=0))
-                    elif ephys_norm_type == "weighted":
-                        ephys = zscore(
-                            np.average(ephys, axis=0, weights=igs_tmp_spatial)
-                        )
-                    elif ephys_norm_type == "top_k":
-                        topk_indices = np.argsort(igs_tmp_spatial)[::-1][:top_k]
-                        ephys = zscore(
-                            np.average(
-                                ephys[topk_indices],
-                                axis=0,
-                                weights=igs_tmp_spatial[topk_indices],
-                            )
-                        )
-                    else:
-                        raise ValueError("ephys_norm_type must be mean or weighted")
-                    plt.plot(
-                        igs_tmp,
-                        label=f"ig_{type_}",
-                        linewidth=1.5,
-                        c=mpl.cm.tab20(idx_color),
-                    )
-                    idx_color += 1
-                    plt.plot(
-                        ephys,
-                        label=f"{type_}",
-                        linewidth=1.5,
-                        c=mpl.cm.tab20(idx_color),
-                    )
-                    idx_color += 1
-                    signals.append(igs_tmp)
-                    signals.append(ephys)
-            speech = np.array(
-                itemgetter(*np.where(idx_ephys_target)[0])(speeches_norm_all)
-            )
-            speech = np.mean(speech, axis=0)
-            signals.append(speech)
-            plt.plot(speech, label="speech", linewidth=1.5, c=mpl.cm.tab20(idx_color))
-            idx_color += 1
-            plt.legend()
-            plt.xlim(0, 320)
-            plt.xticks(fontsize=14)
-            plt.yticks(fontsize=14)
-            # plt.ylim(-0.75, 0.75)
-            # plt.axis("off")
-            (save_path / "temporal").mkdir(exist_ok=True, parents=True)
-            plt.savefig(save_path / "temporal" / f"{color}_{task}.png")
-            plt.clf()
-            plt.close()
-
-
-def plot_ig_speech_temporal(
-    igs_norm_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    eegs_table_all: pd.DataFrame,
-    speeches_norm_all: List[np.ndarray],
-    colors: List[tuple],
-    models: List[str],
-    tasks: List[str],
-    save_path: Path,
-    ephys_norm_type: str = "mean",
-    top_k: int = 10,
-    w_size: float = 6.0,
-    h_size: float = 3.5,
-    fontsize_legend: float = 3.5,
-    fontsize_tick: float = 3.5,
-    lw: float = 0.8,
-) -> None:
-    """plot ig temporal
-
-    Args:
-        igs_norm_all (List[np.ndarray]): ig norm
-        igs_table_all (pd.DataFrame): ig table
-        eegs_table_all (pd.DataFrame): eeg table
-        speeches_norm_all (List[np.ndarray]): speech norm
-        colors (List[tuple]): color
-        models (List[str]): models
-        tasks (List[str]): tasks
-        save_path (Path): save path
-        ephys_norm_type (str, optional): ephys norm type. Defaults to "mean".
-        top_k (int, optional): top k. Defaults to 10.
-        w_size (float, optional): width size. Defaults to 6.0.
-        h_size (float, optional): height size. Defaults to 3.5.
-        fontsize_legend (float, optional): fontsize legend. Defaults to 3.5.
-        fontsize_tick (float, optional): fontsize tick. Defaults to 3.5.
-        lw (float, optional): linewidth. Defaults to 0.8.
-    """
-    fig, axes = plt.subplots(
-        len(tasks),
-        len(colors),
-        tight_layout=True,
-        figsize=(len(colors) * w_size * cm_to_inch, len(tasks) * h_size * cm_to_inch),
-    )
-    for task in tasks:
-        for label, color in enumerate(colors):
-            ax = axes[tasks.index(task), label]
-            idx_color = 0
-            # plt.figure(figsize=(w_size * cm_to_inch, h_size * cm_to_inch))
-            for model in models:
-                idx_target = (
-                    (igs_table_all["model"] == model)
-                    & (igs_table_all["label"] == label)
-                    & (igs_table_all["task"] == task)
-                )
-                idx_ephys_target = (eegs_table_all["label"] == label) & (
-                    eegs_table_all["task"] == task
-                )
-                if idx_target.sum() == 0:
-                    cprint(
-                        (
-                            f"no data for model: {model}, color: {color}, "
-                            f"task: {task}"
-                        ),
-                        "yellow",
-                    )
-                    continue
-                cprint(
-                    (
-                        f"model: {model}, color: {color}, task: {task} "
-                        f"sum {idx_target.sum()}"
-                    ),
-                    "cyan",
-                )
-                igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_norm_all))
-                igs_tmp_spatial = np.mean(igs_tmp, axis=(0, 2))
-                igs_tmp = np.mean(igs_tmp, axis=0)  # (128, 320)
-                if "EMG" in model:
-                    type_ = "emg"
-                elif "wo_adapt_filt" in model:
-                    type_ = "eeg w/o adapt filt"
-                else:
-                    type_ = "eeg w/ adapt filt"
-                if type_ == "emg":
-                    for idx_emg, ig_emg in enumerate(igs_tmp):
-                        if idx_emg == 0:
-                            emg_name = "EOG"
-                        elif idx_emg == 1:
-                            emg_name = "EMG_upper"
-                        elif idx_emg == 2:
-                            emg_name = "EMG_lower"
-                        else:
-                            raise ValueError("idx_emg must be 0, 1 or 2")
-                        ax.plot(
-                            ig_emg,
-                            label=f"ig_{emg_name}",
-                            linewidth=lw,
-                            c=mpl.cm.tab10(idx_color),
-                        )
-                        idx_color += 1
-                else:
-                    if ephys_norm_type == "mean":
-                        igs_tmp = zscore(igs_tmp.mean(axis=0))
-                    elif ephys_norm_type == "weighted":
-                        igs_tmp = zscore(
-                            np.average(igs_tmp, axis=0, weights=igs_tmp_spatial)
-                        )
-                    elif ephys_norm_type == "top_k":
-                        topk_indices = np.argsort(igs_tmp_spatial)[::-1][:top_k]
-                        igs_tmp = zscore(
-                            np.average(
-                                igs_tmp[topk_indices],
-                                axis=0,
-                                weights=igs_tmp_spatial[topk_indices],
-                            )
-                        )
-                    else:
-                        raise ValueError("ephys_norm_type must be mean or weighted")
-                    ax.plot(
-                        igs_tmp,
-                        label=f"ig_{type_}",
-                        linewidth=lw,
-                        c=mpl.cm.tab10(idx_color),
-                    )
-                    idx_color += 1
-            speech = np.array(
-                itemgetter(*np.where(idx_ephys_target)[0])(speeches_norm_all)
-            )
-            speech = np.mean(speech, axis=0)
-            ax.plot(speech, label="speech", linewidth=lw, c=mpl.cm.tab10(idx_color))
-            idx_color += 1
-            ax.legend(fontsize=fontsize_legend)
-            ax.set_xlim(0, 320)
-            ax.xaxis.set_tick_params(labelsize=fontsize_tick)
-            ax.yaxis.set_tick_params(labelsize=fontsize_tick)
-            # ax.ylim(-0.75, 0.75)
-            # ax.axis("off")
-    fig.savefig(save_path / f"combined_ig_temporal_{ephys_norm_type}.png")
-    plt.clf()
-    plt.close()
-
-
-def plot_ephys_speech_temporal(
-    igs_norm_all: List[np.ndarray],
-    igs_table_all: pd.DataFrame,
-    eegs_norm_all: List[np.ndarray],
-    eegs_table_all: pd.DataFrame,
-    emgs_norm_all: List[np.ndarray],
-    speeches_norm_all: List[np.ndarray],
-    colors: List[tuple],
-    models: List[str],
-    tasks: List[str],
-    save_path: Path,
-    ephys_norm_type: str = "mean",
-    top_k: int = 10,
-    w_size: float = 6.0,
-    h_size: float = 3.5,
-    fontsize_legend: float = 3.5,
-    fontsize_tick: float = 3.5,
-    lw: float = 0.8,
-) -> None:
-    """plot ig temporal
-
-    Args:
-        igs_norm_all (List[np.ndarray]): ig norm
-        igs_table_all (pd.DataFrame): ig table
-        eegs_norm_all (List[np.ndarray]): eeg norm
-        eegs_table_all (pd.DataFrame): eeg table
-        emgs_norm_all (List[np.ndarray]): emg norm
-        speeches_norm_all (List[np.ndarray]): speech norm
-        colors (List[tuple]): color
-        models (List[str]): models
-        tasks (List[str]): tasks
-        save_path (Path): save path
-        ephys_norm_type (str, optional): ephys norm type. Defaults to "mean".
-        top_k (int, optional): top k. Defaults to 10.
-        w_size (float, optional): width size. Defaults to 6.0.
-        h_size (float, optional): height size. Defaults to 3.5.
-        fontsize_legend (float, optional): fontsize legend. Defaults to 3.5.
-        fontsize_tick (float, optional): fontsize tick. Defaults to 3.5.
-        lw (float, optional): linewidth. Defaults to 0.8.
-    """
-    fig, axes = plt.subplots(
-        len(tasks),
-        len(colors),
-        tight_layout=True,
-        figsize=(len(colors) * w_size * cm_to_inch, len(tasks) * h_size * cm_to_inch),
-    )
-    for task in tasks:
-        for label, color in enumerate(colors):
-            ax = axes[tasks.index(task), label]
-            idx_color = 0
-            # plt.figure(figsize=(w_size * cm_to_inch, h_size * cm_to_inch))
-            for model in models:
-                idx_target = (
-                    (igs_table_all["model"] == model)
-                    & (igs_table_all["label"] == label)
-                    & (igs_table_all["task"] == task)
-                )
-                idx_ephys_target = (eegs_table_all["label"] == label) & (
-                    eegs_table_all["task"] == task
-                )
-                if idx_target.sum() == 0:
-                    cprint(
-                        (
-                            f"no data for model: {model}, color: {color}, "
-                            f"task: {task}"
-                        ),
-                        "yellow",
-                    )
-                    continue
-                cprint(
-                    (
-                        f"model: {model}, color: {color}, task: {task} "
-                        f"sum {idx_target.sum()}"
-                    ),
-                    "cyan",
-                )
-                igs_tmp = np.array(itemgetter(*np.where(idx_target)[0])(igs_norm_all))
-                igs_tmp_spatial = np.mean(igs_tmp, axis=(0, 2))
-                igs_tmp = np.mean(igs_tmp, axis=0)  # (128, 320)
-                eegs_tmp = np.array(
-                    itemgetter(*np.where(idx_ephys_target)[0])(eegs_norm_all)
-                )
-                eegs_tmp = np.mean(eegs_tmp, axis=0)  # (128, 320)
-                emgs_tmp = np.array(
-                    itemgetter(*np.where(idx_ephys_target)[0])(emgs_norm_all)
-                )
-                emgs_tmp = np.mean(emgs_tmp, axis=0)  # (3, 320)
-                if "EMG" in model:
-                    type_ = "emg"
-                elif "wo_adapt_filt" in model:
-                    type_ = "eeg w/o adapt filt"
-                else:
-                    type_ = "eeg w/ adapt filt"
-                if type_ == "emg":
-                    for idx_emg, emg in enumerate(emgs_tmp):
-                        if idx_emg == 0:
-                            emg_name = "EOG"
-                        elif idx_emg == 1:
-                            emg_name = "EMG_upper"
-                        elif idx_emg == 2:
-                            emg_name = "EMG_lower"
-                        else:
-                            raise ValueError("idx_emg must be 0, 1 or 2")
-                        ax.plot(
-                            emg,
-                            label=f"{emg_name}",
-                            linewidth=lw,
-                            c=mpl.cm.tab10(idx_color),
-                        )
-                        idx_color += 1
-                else:
-                    if ephys_norm_type == "mean":
-                        eeg_tmp = zscore(eegs_tmp.mean(axis=0))
-                    elif ephys_norm_type == "weighted":
-                        eeg_tmp = zscore(
-                            np.average(eegs_tmp, axis=0, weights=igs_tmp_spatial)
-                        )
-                    elif ephys_norm_type == "top_k":
-                        topk_indices = np.argsort(igs_tmp_spatial)[::-1][:top_k]
-                        eeg_tmp = zscore(
-                            np.average(
-                                eegs_tmp[topk_indices],
-                                axis=0,
-                                weights=igs_tmp_spatial[topk_indices],
-                            )
-                        )
-                    else:
-                        raise ValueError("ephys_norm_type must be mean or weighted")
-                    ax.plot(
-                        eeg_tmp,
-                        label=f"{type_}",
-                        linewidth=lw,
-                        c=mpl.cm.tab10(idx_color),
-                    )
-                    idx_color += 1
-            speech = np.array(
-                itemgetter(*np.where(idx_ephys_target)[0])(speeches_norm_all)
-            )
-            speech = np.mean(speech, axis=0)
-            ax.plot(speech, label="speech", linewidth=lw, c=mpl.cm.tab10(idx_color))
-            idx_color += 1
-            ax.legend(fontsize=fontsize_legend)
-            ax.set_xlim(0, 320)
-            ax.xaxis.set_tick_params(labelsize=fontsize_tick)
-            ax.yaxis.set_tick_params(labelsize=fontsize_tick)
-            # ax.ylim(-0.75, 0.75)
-            # ax.axis("off")
-    fig.savefig(save_path / f"combined_ephys_temporal_{ephys_norm_type}.png")
-    plt.clf()
-    plt.close()
 
 
 def imshow_jaccard_indices_and_statistical_results(
@@ -3277,7 +2408,7 @@ def plot_temporal_representative(
             )
             im = ax.imshow(
                 jaccard_indices,
-                cmap="bwr",
+                cmap="jet",
                 vmin=0,
                 vmax=1,
             )
@@ -3348,20 +2479,9 @@ def main() -> None:
     ]
     models = ["EEGNet", "EMG_EEGNet", "EEGNet_wo_adapt_filt"]
     colors = ["green", "magenta", "orange", "violet", "yellow"]
-    colors_rgb = [green, magenta, orange, violet, yellow]
-    subjects = ["subject1", "subject2", "subject3"]
     tasks = ["overt", "minimally overt", "covert"]
-    save_condition = {"color": "green", "subject": "subject1", "task": "minimally overt"}
     correct_decode = True
     clip = 5
-    fs = 256
-    min_distance_sec = 0.15
-    min_width_sec = 0.05
-    min_distance = int(min_distance_sec * fs)
-    min_width = int(min_width_sec * fs)
-    window_size = 15
-    tau = int(0.3 * fs)
-    th = 0
 
     igs_all = []
     igs_norm_all = []
@@ -3433,283 +2553,143 @@ def main() -> None:
     cprint(f"len eegs_wo_adapt_filt_all: {len(eegs_wo_adapt_filt_all)}", "cyan")
     cprint(f"len emgs_all: {len(emgs_all)}", "cyan")
 
-    # plot ig map
-    # save_path = Path("figures/fig4")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # imshow_each_ig_map(
-    #     subjects,
-    #     tasks,
-    #     models,
-    #     colors,
-    #     igs_all,
-    #     igs_table_all,
-    #     correct_decode,
-    #     clip,
-    #     save_path,
-    # )
+    imshow_each_ig_montage_representative(
+        tasks,
+        colors,
+        igs_norm_all,
+        igs_table_all,
+        eegs_norm_all,
+        correct_decode,
+        clip,
+        model="EEGNet",
+        cmax=1.0,
+        logscale=False,
+    )
 
-    # plot temporal ig
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # plot_ig_temporal(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     colors_rgb,
-    #     models,
-    #     tasks,
-    #     clip,
-    #     save_path,
-    # )
+    save_path = Path("figures/fig3/temporal_representative")
+    save_path.mkdir(exist_ok=True, parents=True)
+    plot_temporal_representative(
+        igs_norm_all,
+        igs_table_all,
+        eegs_norm_all,
+        eegs_table_all,
+        emgs_norm_all,
+        speeches_norm_all,
+        colors,
+        models,
+        tasks,
+        save_path,
+        ephys_norm_type="top_k",
+        top_k=10,
+        w_size=6.0,
+        h_size=3.5,
+        fontsize_legend=1.5,
+        fontsize_tick=4.0,
+        lw=0.4,
+        only_ig=False,
+    )
 
-    # plot exsample
-    # save_path = Path("figures/fig4")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # plot_exsample(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     colors_rgb,
-    #     subject="subject1",
-    #     model="EEGNet",
-    #     task="minimally overt",
-    #     label=0,
-    #     correct_decode=True,
-    #     clip=clip,
-    #     save_path=save_path,
-    # )
+    save_path = Path("figures/fig3")
+    save_path.mkdir(exist_ok=True, parents=True)
+    # imshow_temporal_jaccard_indices
+    imshow_temporal_jaccard_indices(
+        igs_norm_all,
+        igs_table_all,
+        eegs_norm_all,
+        eegs_table_all,
+        emgs_norm_all,
+        speeches_norm_all,
+        colors,
+        models,
+        tasks,
+        save_path,
+        ephys_norm_type="top_k",
+        top_k=10,
+        w_size=6.0,
+        h_size=5.5,
+        fontsize_legend=3.5,
+        fontsize_tick=3.5,
+        fontsize_star=5.0,
+        threshold=0,
+        only_ig=True,
+        corr_type="jaccard",
+        corr_trial_base=True,
+    )
 
-    # show corr mat
-    # show_corr_mat(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     colors_rgb,
-    #     tasks,
-    #     save_path,
-    #     model="EEGNet",
-    #     correct_decode=True,
-    # )
+    save_path = Path("figures/fig3")
+    save_path.mkdir(exist_ok=True, parents=True)
+    imshow_temporal_jaccard_indices_between_tasks(
+        igs_norm_all,
+        igs_table_all,
+        colors,
+        model="EEGNet",
+        tasks=tasks,
+        save_path=save_path,
+        norm_type="mean",
+        top_k=10,
+        w_size=6.0,
+        h_size=5.5,
+        fontsize_legend=3.5,
+        fontsize_tick=3.5,
+        fontsize_star=9.0,
+        threshold=0,
+        corr_type="jaccard",
+    )
 
-    # # plot montage
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # imshow_each_ig_montage(
-    #     tasks,
-    #     colors,
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     correct_decode,
-    #     clip,
-    #     save_path,
-    #     model="EEGNet",
-    #     cmax=1.0,
-    #     logscale=False,
-    # )
-
-    # plot ig eeg emg speech temporal
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # plot_ig_eeg_emg_speech_temporal(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     eegs_norm_all,
-    #     eegs_table_all,
-    #     eegs_wo_adapt_filt_norm_all,
-    #     emgs_norm_all,
-    #     speeches_norm_all,
-    #     colors,
-    #     models,
-    #     tasks,
-    #     clip,
-    #     save_path,
-    #     ephys_norm_type="top_k",
-    #     top_k=10,
-    # )
-
-    # plot_ig_speech_temporal
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # plot_ig_speech_temporal(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     eegs_table_all,
-    #     speeches_norm_all,
-    #     colors,
-    #     models,
-    #     tasks,
-    #     save_path,
-    #     ephys_norm_type="mean",
-    #     top_k=10,
-    #     w_size=6.0,
-    #     h_size=3.5,
-    #     fontsize_legend=3.5,
-    #     fontsize_tick=3.5,
-    #     lw=0.8,
-    # )
-
-    # plot_ephys_speech_temporal
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # plot_ephys_speech_temporal(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     eegs_norm_all,
-    #     eegs_table_all,
-    #     emgs_norm_all,
-    #     speeches_norm_all,
-    #     colors,
-    #     models,
-    #     tasks,
-    #     save_path,
-    #     ephys_norm_type="weighted",
-    #     top_k=10,
-    #     w_size=6.0,
-    #     h_size=3.5,
-    #     fontsize_legend=3.5,
-    #     fontsize_tick=3.5,
-    #     lw=0.8,
-    # )
-
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # # imshow_temporal_jaccard_indices
-    # imshow_temporal_jaccard_indices(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     eegs_norm_all,
-    #     eegs_table_all,
-    #     emgs_norm_all,
-    #     speeches_norm_all,
-    #     colors,
-    #     models,
-    #     tasks,
-    #     save_path,
-    #     ephys_norm_type="top_k",
-    #     top_k=10,
-    #     w_size=6.0,
-    #     h_size=5.5,
-    #     fontsize_legend=3.5,
-    #     fontsize_tick=3.5,
-    #     fontsize_star=5.0,
-    #     threshold=0,
-    #     only_ig=True,
-    #     corr_type="jaccard",
-    #     corr_trial_base=True,
-    # )
-
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # plot_temporal_representative(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     eegs_norm_all,
-    #     eegs_table_all,
-    #     emgs_norm_all,
-    #     speeches_norm_all,
-    #     colors,
-    #     models,
-    #     tasks,
-    #     save_path,
-    #     ephys_norm_type="top_k",
-    #     top_k=10,
-    #     w_size=6.0,
-    #     h_size=3.5,
-    #     fontsize_legend=1.5,
-    #     fontsize_tick=4.0,
-    #     lw=0.4,
-    #     only_ig=False,
-    # )
-
-    # mis = np.load("figures/fig2/data/mis.npy")
-    # mis_table = pd.read_csv("figures/fig2/data/mis_table.csv")
-    # target_index = np.where(
-    #     (mis_table["eeg_type"] == "raw")
-    #     & (mis_table["emg_type"] == "raw")
-    #     & (mis_table["surrogate_type"] == "none")
-    # )[0]
-    # mi_roi = np.mean(mis[target_index], axis=1)
-    # mi_roi = [mi for mi in mi_roi]
-    # eegs_table_all_onoff = pd.read_csv("figures/fig2/data/eegs_table_all.csv")
-    # target_indices_mi = np.where(
-    #     eegs_table_all_onoff["exp_name"].str.contains("online").values
-    # )[0]
-    # save_path = Path("figures/fig5")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # imshow_diff_ig_montage(
-    #     tasks,
-    #     colors,
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     correct_decode,
-    #     clip,
-    #     save_path,
-    #     model1="EEGNet",
-    #     model2="EEGNet_wo_adapt_filt",
-    #     cmax=1.0,
-    #     logscale=False,
-    #     cmap="bwr",
-    #     show_each=False,
-    #     show_avg=True,
-    #     trial_based=True,
-    #     compare_with_emgs=True,
-    #     mi_emgs=mi_roi,
-    #     corr_type="weight_multiplied_pearson",
-    #     mis=mis[target_index][:, target_indices_mi, :],
-    # )
-
-    # save_path = Path("figures/fig4")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # imshow_combine_ig_montage(
-    #     tasks,
-    #     colors,
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     correct_decode,
-    #     clip,
-    #     save_path,
-    #     model="EEGNet",
-    #     cmax=1.0,
-    #     logscale=False,
-    #     cmap="viridis",
-    #     show_sd=False,
-    #     show_avg=True,
-    #     compare_with_emgs=True,
-    #     mi_emgs=mi_roi,
-    # )
-
-    # save_path = Path("figures/fig4")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # imshow_each_ig_montage_representative(
-    #     tasks,
-    #     colors,
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     eegs_norm_all,
-    #     correct_decode,
-    #     clip,
-    #     save_path,
-    #     model="EEGNet",
-    #     cmax=1.0,
-    #     logscale=False,
-    # )
-
-    # save_path = Path("figures/fig3")
-    # save_path.mkdir(exist_ok=True, parents=True)
-    # imshow_temporal_jaccard_indices_between_tasks(
-    #     igs_norm_all,
-    #     igs_table_all,
-    #     colors,
-    #     model="EEGNet",
-    #     tasks=tasks,
-    #     save_path=save_path,
-    #     norm_type="mean",
-    #     top_k=10,
-    #     w_size=6.0,
-    #     h_size=5.5,
-    #     fontsize_legend=3.5,
-    #     fontsize_tick=3.5,
-    #     fontsize_star=9.0,
-    #     threshold=0,
-    #     corr_type="jaccard",
-    # )
+    mis = np.load("figures/fig2/data/mis.npy")
+    mis_table = pd.read_csv("figures/fig2/data/mis_table.csv")
+    target_index = np.where(
+        (mis_table["eeg_type"] == "raw")
+        & (mis_table["emg_type"] == "raw")
+        & (mis_table["surrogate_type"] == "none")
+    )[0]
+    mi_roi = np.mean(mis[target_index], axis=1)
+    mi_roi = [mi for mi in mi_roi]
+    eegs_table_all_onoff = pd.read_csv("figures/fig2/data/eegs_table_all.csv")
+    target_indices_mi = np.where(
+        eegs_table_all_onoff["exp_name"].str.contains("online").values
+    )[0]
+    save_path = Path("figures/fig4")
+    save_path.mkdir(exist_ok=True, parents=True)
+    imshow_combine_ig_montage(
+        tasks,
+        colors,
+        igs_norm_all,
+        igs_table_all,
+        correct_decode,
+        save_path,
+        model="EEGNet",
+        cmax=1.0,
+        logscale=False,
+        cmap="viridis",
+        show_sd=False,
+        show_avg=True,
+        compare_with_emgs=True,
+        mi_emgs=mi_roi,
+    )
+    save_path = Path("figures/fig5")
+    save_path.mkdir(exist_ok=True, parents=True)
+    for corr_type in ["pearson", "weight_multiplied_pearson"]:
+        imshow_diff_ig_montage(
+            tasks,
+            colors,
+            igs_norm_all,
+            igs_table_all,
+            correct_decode,
+            save_path,
+            model1="EEGNet",
+            model2="EEGNet_wo_adapt_filt",
+            cmax=1.0,
+            logscale=False,
+            cmap="bwr",
+            show_each=False,
+            show_avg=True,
+            trial_based=True,
+            compare_with_emgs=True,
+            mi_emgs=mi_roi,
+            corr_type=corr_type,
+            mis=mis[target_index][:, target_indices_mi, :],
+        )
 
 
 if __name__ == "__main__":

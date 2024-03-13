@@ -41,9 +41,13 @@ Public repository for Gmail interface papers using uhd-EEG
    ```bash
    python uhd_eeg/plot_figures/show_montage_decimation.py
    ```
+9. Analysis on decoding contributions (integrated gradients, Fig.3-5, Fig.S2)
+   ```bash
+   python uhd_eeg/plot_figures/plot_contribution.py
+   ```
 
 ## TODOs
 
-- [ ] add usage for Fig. 3-5
-- [ ] check excesses and deficiencies for source codes
+- [x] add usage for Fig. 3-5
+- [x] check excesses and deficiencies for source codes
 - [x] add conceptual picutre

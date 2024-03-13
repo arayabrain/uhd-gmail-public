@@ -3349,9 +3349,9 @@ def main() -> None:
     models = ["EEGNet", "EMG_EEGNet", "EEGNet_wo_adapt_filt"]
     colors = ["green", "magenta", "orange", "violet", "yellow"]
     colors_rgb = [green, magenta, orange, violet, yellow]
-    subjects = ["shun", "yasu", "rousslan"]
+    subjects = ["subject1", "subject2", "subject3"]
     tasks = ["overt", "minimally overt", "covert"]
-    save_condition = {"color": "green", "subject": "shun", "task": "minimally overt"}
+    save_condition = {"color": "green", "subject": "subject1", "task": "minimally overt"}
     correct_decode = True
     clip = 5
     fs = 256
@@ -3468,7 +3468,7 @@ def main() -> None:
     #     igs_norm_all,
     #     igs_table_all,
     #     colors_rgb,
-    #     subject="shun",
+    #     subject="subject1",
     #     model="EEGNet",
     #     task="minimally overt",
     #     label=0,
@@ -3618,42 +3618,42 @@ def main() -> None:
     #     only_ig=False,
     # )
 
-    mis = np.load("figures/fig2/data/mis.npy")
-    mis_table = pd.read_csv("figures/fig2/data/mis_table.csv")
-    target_index = np.where(
-        (mis_table["eeg_type"] == "raw")
-        & (mis_table["emg_type"] == "raw")
-        & (mis_table["surrogate_type"] == "none")
-    )[0]
-    mi_roi = np.mean(mis[target_index], axis=1)
-    mi_roi = [mi for mi in mi_roi]
-    eegs_table_all_onoff = pd.read_csv("figures/fig2/data/eegs_table_all.csv")
-    target_indices_mi = np.where(
-        eegs_table_all_onoff["exp_name"].str.contains("online").values
-    )[0]
-    save_path = Path("figures/fig5")
-    save_path.mkdir(exist_ok=True, parents=True)
-    imshow_diff_ig_montage(
-        tasks,
-        colors,
-        igs_norm_all,
-        igs_table_all,
-        correct_decode,
-        clip,
-        save_path,
-        model1="EEGNet",
-        model2="EEGNet_wo_adapt_filt",
-        cmax=1.0,
-        logscale=False,
-        cmap="bwr",
-        show_each=False,
-        show_avg=True,
-        trial_based=True,
-        compare_with_emgs=True,
-        mi_emgs=mi_roi,
-        corr_type="weight_multiplied_pearson",
-        mis=mis[target_index][:, target_indices_mi, :],
-    )
+    # mis = np.load("figures/fig2/data/mis.npy")
+    # mis_table = pd.read_csv("figures/fig2/data/mis_table.csv")
+    # target_index = np.where(
+    #     (mis_table["eeg_type"] == "raw")
+    #     & (mis_table["emg_type"] == "raw")
+    #     & (mis_table["surrogate_type"] == "none")
+    # )[0]
+    # mi_roi = np.mean(mis[target_index], axis=1)
+    # mi_roi = [mi for mi in mi_roi]
+    # eegs_table_all_onoff = pd.read_csv("figures/fig2/data/eegs_table_all.csv")
+    # target_indices_mi = np.where(
+    #     eegs_table_all_onoff["exp_name"].str.contains("online").values
+    # )[0]
+    # save_path = Path("figures/fig5")
+    # save_path.mkdir(exist_ok=True, parents=True)
+    # imshow_diff_ig_montage(
+    #     tasks,
+    #     colors,
+    #     igs_norm_all,
+    #     igs_table_all,
+    #     correct_decode,
+    #     clip,
+    #     save_path,
+    #     model1="EEGNet",
+    #     model2="EEGNet_wo_adapt_filt",
+    #     cmax=1.0,
+    #     logscale=False,
+    #     cmap="bwr",
+    #     show_each=False,
+    #     show_avg=True,
+    #     trial_based=True,
+    #     compare_with_emgs=True,
+    #     mi_emgs=mi_roi,
+    #     corr_type="weight_multiplied_pearson",
+    #     mis=mis[target_index][:, target_indices_mi, :],
+    # )
 
     # save_path = Path("figures/fig4")
     # save_path.mkdir(exist_ok=True, parents=True)

@@ -4,7 +4,9 @@
 
 # Delineating neural contributions to electroencephalogram-based speech decoding
 
-Public repository for Gmail interface papers using uhd-EEG
+Public repository for Gmail interface papers using uhd-EEG<br> 
+Author: Motoshige Sato<sup>1</sup>, Yasuo Kabe<sup>1</sup>, Sensho Nobe<sup>1</sup>, Akito Yoshida<sup>1</sup>, Masakazu Inoue<sup>1</sup>, Mayumi Shimizu<sup>1</sup>, Kenichi Tomeoka<sup>1</sup>, Shuntaro Sasai<sup>1*</sup><br> 
+<sup>1</sup>[Araya Inc.](https://www.araya.org/en/)
 
 ## preparation
 1. Install requirements package.
@@ -45,9 +47,3 @@ Public repository for Gmail interface papers using uhd-EEG
    ```bash
    python uhd_eeg/plot_figures/plot_contribution.py
    ```
-
-## TODOs
-
-- [x] add usage for Fig. 3-5
-- [x] check excesses and deficiencies for source codes
-- [x] add conceptual picutre

@@ -37,3 +37,4 @@ nohup.out
 logs/*
 figures/
 *.code-workspace
+uv.lock

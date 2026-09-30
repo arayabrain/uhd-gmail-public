@@ -3,7 +3,7 @@ name = "uhd-gmail-public"
 version = "0.1.0"
 description = "The repository for reproducing the implementation of paper 'Delineating neural contributions to electroencephalogram-based speech decoding'"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "torch==2.5.1",
     "torchaudio==2.5.1",
@@ -44,6 +44,8 @@ dependencies = [
     "eeglabio>=0.1.3",
     "python-dotenv>=1.2.2",
     "pyprep>=0.6.0",
+    "pyyaml>=6.0",
+    "matplotlib>=3.8",
 ]
 
 [[tool.uv.index]]
@@ -59,15 +61,15 @@ explicit = true
 [tool.uv.sources]
 torch = [
     { index = "torch-cuda", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"},
-    { index = "torch-cpu", marker = "sys_platform == 'darwin' or (sys_platform == 'linux' and platform_machine == 'aarch64')"},
+    { index = "torch-cpu", marker = "sys_platform == 'darwin' or sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'aarch64')"},
 ]
 torchaudio = [
     { index = "torch-cuda", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"},
-    { index = "torch-cpu", marker = "sys_platform == 'darwin' or (sys_platform == 'linux' and platform_machine == 'aarch64')"},
+    { index = "torch-cpu", marker = "sys_platform == 'darwin' or sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'aarch64')"},
 ]
 torchvision = [
     { index = "torch-cuda", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"},
-    { index = "torch-cpu", marker = "sys_platform == 'darwin' or (sys_platform == 'linux' and platform_machine == 'aarch64')"},
+    { index = "torch-cpu", marker = "sys_platform == 'darwin' or sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'aarch64')"},
 ]
 
 [tool.pyright]
@@ -97,12 +99,18 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "plot_figures",
     "uhd_eeg",
 ]
 include = [
-    "/plot_figures",
     "/uhd_eeg",
+    "/bids",
     "README.md",
     "LICENSE",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
 ]

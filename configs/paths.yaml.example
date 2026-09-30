@@ -1,0 +1,8 @@
+# Copy this file to configs/paths.yaml and edit for your machine.
+# configs/paths.yaml is gitignored; do not commit machine-specific paths.
+
+# Root of the OpenNeuro ds007591 download (contains sub-1 ... sub-9).
+bids_root: data/ds007591
+
+# Directory for derived per-trial arrays written by bids/extract_from_bids.py.
+output_root: data/derived

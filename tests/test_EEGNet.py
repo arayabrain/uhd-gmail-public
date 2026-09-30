@@ -8,7 +8,8 @@ from uhd_eeg.models.CNN.EEGNet import EEGNet, EEGNet_with_mask
 
 class TestEEGNet_with_mask(unittest.TestCase):
     def setUp(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Force CPU in unit tests: CUDA init can hang on some Windows drivers.
+        self.device = torch.device("cpu")
         with initialize(version_base=None, config_path="../configs/test"):
             args = compose(config_name="EEGNet_with_mask")
         self.model = EEGNet_with_mask(args, 320)
@@ -33,7 +34,7 @@ class TestEEGNet_with_mask(unittest.TestCase):
 
 class TestEEGNet(unittest.TestCase):
     def setUp(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
         with initialize(version_base=None, config_path="../configs/test"):
             args = compose(config_name="EEGNet")
         self.model = EEGNet(args, T=320)

@@ -5,7 +5,7 @@ seed: 2
 n_splits: 10
 decode_from: eeg
 
-# ==== preproc ==== #  
+# ==== preproc ==== #
 dura_unit: 1.25 # sec
 no_avg: false  # default: false
 n_trial_avg: 5
@@ -13,11 +13,11 @@ n_ch_eeg: 128
 n_ch_noise: 3
 unit_coeff: 1.0e-6
 preamp_gain : 10
-jitter: 0.1 # sec
+jitter: 0.1 # sec, max width when random; fixed offset when fixed
+jitter_mode: random # random | fixed
 nlms:
   mu: 0.1
   w: random
-  # n_jobs: 16
 bandpass:
   low: 2.
   high: 118.
@@ -31,48 +31,64 @@ emg_highpass:
   low: 60
   high: 127
 wo_adapt_filt: false # default: false
-  
+
 # ==== Architecture ==== #
 model_name: EEGNet
-# common
 num_channels: 128
 n_class: 5
-k1: 30 # 960
-k2: 4 # 96
+k1: 30
+k2: 4
 F1: 16
 F2: 32
 D: 2
-p1: 2 # 40
-p2: 4 # 80
+p1: 2
+p2: 4
 dr1: 0.50
 dr2: 0.75
 hilbert_transform: False
-# for with mask
-### for 10-20
 channels_use:
-  - 4  # T7
-  - 17  # C5
-  - 39  # CP5
-  - 49  # FT7
-  - 60  # FC5
-  - 67  # F7
-  - 78  # F5
-  - 92  # F3
-  - 104  # FC3
-  - 117  # FC1
-
-# for RNN
+  - 4
+  - 17
+  - 39
+  - 49
+  - 60
+  - 67
+  - 78
+  - 92
+  - 104
+  - 117
 rnn_type: LSTM
 hidden_size: 128
 num_layers: 2
 bidirectional: True
 dropout_rate: 0.5
 last_activation: softmax
-# for CovTanSVM
-C: 1.6653738245684553 # optimized by optuna
+C: 1.6653738245684553
+
+cBraMod:
+  num_channels: ${num_channels}
+  in_dim: 200
+  out_dim: 200
+  d_model: 200
+  dim_feedforward: 800
+  seq_len: 30
+  n_layer: 12
+  nhead: 8
+  patch_mode: overlap
+  hopsize: 50
+  classifier: all_patch_reps
+  dropout: ${dr2}
+  num_of_classes: ${n_class}
+  use_backbone_weights: true
+  backbone_weight_path: data/weights/cBraMod/pretrained_weights.pth
+  encoder_lr: ${learning_rate}
+  decoder_lr: ${learning_rate}
 
 # ==== Training ==== #
 save_results: True
+test_ratio: 0.1
+record_history_filepath: outputs/offline/baseline/history_color_rotating_test_fold_cv.csv
+test_record_history_filepath: outputs/offline/baseline/history_color_rotating_test_fold_test.csv
 normalize: false
 n_epochs: 1000
 optimizer: AdamW
@@ -81,7 +97,7 @@ eps: 1.0e-8
 weight_decay: 0.01
 scheduler:
   apply: False
-  name: CosineAnnealingLR # CosineAnnealingLR | ReduceLROnPlateau
+  name: CosineAnnealingLR
   factor: 0.1
   patience: 10
   Tmax: 100
@@ -91,8 +107,7 @@ save_best:
   apply: True
   monitor: loss_val
 log_inference: True
-test_ratio: 0.1
-ensemble_methods: 
+ensemble_methods:
   - mean
   - max
   - zscore_mean
@@ -101,65 +116,78 @@ ensemble_methods:
   - inverse_entropy_weighted
   - majority
 
-parallel_sets: subject1-1
-subject1-1:
-  csv_dir: data/subject1/20230511
-  npy_dir: data/subject1/20230511/eeg_margin_before_preproc/20230511_backup_calibrated_1
-  csv_header: _backup_calibrated_1
+# Runs are addressed by BIDS entities (sub-N, task, acq). Paths point at
+# derived arrays from bids/extract_from_bids.py under output_root.
+parallel_sets: sub-1_task-minimallyovert_acq-calibration
+sub-1_task-minimallyovert_acq-calibration:
+  subject: sub-1
+  session: ses-20230511
+  task: minimallyovert
+  acq: calibration
+  csv_dir: data/derived/sub-1/ses-20230511
+  npy_dir: data/derived/sub-1/ses-20230511/task-minimallyovert_acq-calibration_run-01
   gpu: 0
-subject1-2:
-  csv_dir: data/subject1/20230529
-  npy_dir: data/subject1/20230529/eeg_margin_before_preproc/20230529_backup_calibrated_1
-  csv_header: _backup_calibrated_1
+sub-1_task-overt_acq-calibration:
+  subject: sub-1
+  session: ses-20230529
+  task: overt
+  acq: calibration
+  csv_dir: data/derived/sub-1/ses-20230529
+  npy_dir: data/derived/sub-1/ses-20230529/task-overt_acq-calibration_run-01
   gpu: 1
-subject1-3:
-  csv_dir: data/subject1/20230529
-  npy_dir: data/subject1/20230529/eeg_margin_before_preproc/20230529_backup_calibrated_2
-  csv_header: _backup_calibrated_2
+sub-1_task-covert_acq-calibration:
+  subject: sub-1
+  session: ses-20230529
+  task: covert
+  acq: calibration
+  csv_dir: data/derived/sub-1/ses-20230529
+  npy_dir: data/derived/sub-1/ses-20230529/task-covert_acq-calibration_run-01
   gpu: 2
-subject2-1:
-  csv_dir: data/subject2/20230512
-  npy_dir: data/subject2/20230512/eeg_margin_before_preproc/20230512_backup_calibrated_1
-  csv_header: _backup_calibrated_1
-  gpu: 3
-subject2-2:
-  csv_dir: data/subject2/20230512
-  npy_dir: data/subject2/20230512/eeg_margin_before_preproc/20230512_backup_calibrated_2
-  csv_header: _backup_calibrated_2
-  gpu: 4
-subject2-3:
-  csv_dir: data/subject2/20230516
-  npy_dir: data/subject2/20230516/eeg_margin_before_preproc/20230516_backup_calibrated_1
-  csv_header: _backup_calibrated_1
+sub-2_task-minimallyovert_acq-calibration:
+  subject: sub-2
+  session: ses-20230512
+  task: minimallyovert
+  acq: calibration
+  csv_dir: data/derived/sub-2/ses-20230512
+  npy_dir: data/derived/sub-2/ses-20230512/task-minimallyovert_acq-calibration_run-01
   gpu: 0
-subject3-1:
-  csv_dir: data/subject3/20230523
-  npy_dir: data/subject3/20230523/eeg_margin_before_preproc/20230523_backup_calibrated_1
-  csv_header: _backup_calibrated_1
+sub-2_task-overt_acq-calibration:
+  subject: sub-2
+  session: ses-20230512
+  task: overt
+  acq: calibration
+  csv_dir: data/derived/sub-2/ses-20230512
+  npy_dir: data/derived/sub-2/ses-20230512/task-overt_acq-calibration_run-01
   gpu: 1
-subject3-2:
-  csv_dir: data/subject3/20230523
-  npy_dir: data/subject3/20230523/eeg_margin_before_preproc/20230523_backup_calibrated_2
-  csv_header: _backup_calibrated_2
+sub-2_task-covert_acq-calibration:
+  subject: sub-2
+  session: ses-20230516
+  task: covert
+  acq: calibration
+  csv_dir: data/derived/sub-2/ses-20230516
+  npy_dir: data/derived/sub-2/ses-20230516/task-covert_acq-calibration_run-01
   gpu: 2
-subject3-3:
-  csv_dir: data/subject3/20230524
-  npy_dir: data/subject3/20230524/eeg_margin_before_preproc/20230524_backup_calibrated_1
-  csv_header: _backup_calibrated_1
-  gpu: 3
-subject3-4:
-  csv_dir: data/subject3/20230524
-  npy_dir: data/subject3/20230524/eeg_margin_before_preproc/20230524_backup_calibrated_2
-  csv_header: _backup_calibrated_2
-  gpu: 4
-
-fs : 256
-
-# Hydra options
-use_hydra_savedir: True
-hydra:
-  job:
-    chdir: True
-  sweep:
-    dir: 'outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}'
-    subdir: '${hydra.job.override_dirname}'
+sub-3_task-overt_acq-calibration:
+  subject: sub-3
+  session: ses-20230523
+  task: overt
+  acq: calibration
+  csv_dir: data/derived/sub-3/ses-20230523
+  npy_dir: data/derived/sub-3/ses-20230523/task-overt_acq-calibration_run-01
+  gpu: 0
+sub-3_task-minimallyovert_acq-calibration:
+  subject: sub-3
+  session: ses-20230524
+  task: minimallyovert
+  acq: calibration
+  csv_dir: data/derived/sub-3/ses-20230524
+  npy_dir: data/derived/sub-3/ses-20230524/task-minimallyovert_acq-calibration_run-01
+  gpu: 1
+sub-3_task-covert_acq-calibration:
+  subject: sub-3
+  session: ses-20230524
+  task: covert
+  acq: calibration
+  csv_dir: data/derived/sub-3/ses-20230524
+  npy_dir: data/derived/sub-3/ses-20230524/task-covert_acq-calibration_run-01
+  gpu: 2

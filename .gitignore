@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -19,6 +20,17 @@ outputs/
 # Data
 data/*
 !data/.gitkeep
+!data/subject_demographics.example.csv
+!data/intersubject/
+!data/intersubject/**
+!data/voice_volume/
+!data/voice_volume/**
+
+# Local path config (keep only the example tracked)
+configs/paths.yaml
+
+# Agent / editor local state
+.claude/
 
 # Run outputs and temp files
 outputs/
@@ -35,7 +47,11 @@ nohup.out
 *.egg-info
 *.log
 logs/*
-figures/
+# Ignore root-level figure dumps; keep tracked figure scripts
+/figures/
+!scripts/figures/
+!scripts/figures/**
+# Negation above re-includes bytecode; keep __pycache__ ignored.
+scripts/figures/**/__pycache__/
+__pycache__/
 *.code-workspace
-uv.lock
-.env

@@ -22,27 +22,67 @@ from sklearn.svm import SVC
 from torch.utils.data.dataset import Subset
 from torchinfo import summary
 
-from plot_figures.src.eval_accs import within_offline_split_test_save
+from scripts.figures._bids_runs import OFFLINE_RUNS
+from scripts.figures._lib.eval_accs import within_offline_split_test_save
 from uhd_eeg.datasets.DatasetUHD import EEGDataset, EMGDataset
 from uhd_eeg.models.CNN.EEGNet import EEGNet, EEGNet_with_mask
 from uhd_eeg.models.RNN.RNN import MultiLayerRNN
+from uhd_eeg.trainers.eval_helpers import (
+    append_test_history,
+    build_model,
+    build_optimizer,
+    build_scheduler,
+    collect_svm_data,
+    combine_predictions,
+    get_behavior,
+    get_save_dir,
+    get_subject_id,
+    model_filename,
+    model_path,
+    optimizer_step,
+    optimizer_zero_grad,
+    prepare_inputs,
+    scheduler_step,
+    summarize_model,
+    update_best_model,
+)
+
+__all__ = [
+    "append_test_history",
+    "build_model",
+    "build_optimizer",
+    "build_scheduler",
+    "collect_svm_data",
+    "combine_predictions",
+    "get_behavior",
+    "get_save_dir",
+    "get_subject_id",
+    "model_filename",
+    "model_path",
+    "optimizer_step",
+    "optimizer_zero_grad",
+    "prepare_inputs",
+    "scheduler_step",
+    "summarize_model",
+    "update_best_model",
+]
 
 if multiprocessing.get_start_method() == "fork":
     multiprocessing.set_start_method("spawn", force=True)
     print("{} setup done".format(multiprocessing.get_start_method()))
-DATA_LIST = [
-    ["subject1-1", "subject1", "min-overt"],
-    ["subject1-2", "subject1", "overt"],
-    ["subject1-3", "subject1", "covert"],
-    ["subject2-1", "subject2", "min-overt"],
-    ["subject2-2", "subject2", "overt"],
-    ["subject2-3", "subject2", "covert"],
-    ["subject3-1", "subject3", "overt"],
-    ["subject3-2", "subject3", "min-overt"],
-    ["subject3-3", "subject3", "covert"],
-    ["subject3-4", "subject3", "min-overt"],
-]
-DATA_LIST = pd.DataFrame(DATA_LIST, columns=["dataname", "subject", "task"])
+
+DATA_LIST = pd.DataFrame(
+    [
+        {
+            "dataname": run.key,
+            "subject": run.subject,
+            "task": "min-overt" if run.task == "minimallyovert" else run.task,
+            "session": run.session,
+            "acq": run.acq,
+        }
+        for run in OFFLINE_RUNS
+    ]
+)
 
 
 def fit_decoder_CV(

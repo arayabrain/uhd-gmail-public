@@ -1,9 +1,11 @@
 import copy
 import os
+from pathlib import Path
 
 import dill
 import hydra
 import numpy as np
+import pandas as pd
 import torch
 import torch.multiprocessing as multiprocessing
 import torch.nn as nn
@@ -21,10 +23,87 @@ from torchinfo import summary
 from uhd_eeg.datasets.DatasetUHD import EEGDataset, EMGDataset
 from uhd_eeg.models.CNN.EEGNet import EEGNet, EEGNet_with_mask
 from uhd_eeg.models.RNN.RNN import MultiLayerRNN
+from termcolor import cprint
 
 if multiprocessing.get_start_method() == "fork":
     multiprocessing.set_start_method("spawn", force=True)
     print("{} setup done".format(multiprocessing.get_start_method()))
+
+
+class CalculateAndRecordStats:
+    """Append best-epoch training metrics to a shared CSV history file."""
+
+    def __init__(
+        self,
+        record_history_filepath: str,
+        cv: int,
+        behavior: str,
+        model_name: str,
+        sbj: str,
+    ) -> None:
+        self.record_history_filepath = Path(record_history_filepath)
+        hydra_file_path = os.path.join(os.getcwd(), ".hydra", "config.yaml")
+        self.stats = {
+            "sbj": [sbj],
+            "behavior": [behavior],
+            "model_name": [model_name],
+            "CV": [cv],
+            "epoch": [],
+            "acc_tr": [],
+            "acc_val": [],
+            "balanced_acc_tr": [],
+            "balanced_acc_val": [],
+            "loss_tr": [],
+            "loss_val": [],
+            "config": [hydra_file_path],
+        }
+
+    def update(
+        self,
+        loss_tr,
+        loss_val,
+        acc_tr,
+        acc_val,
+        balanced_acc_tr,
+        balanced_acc_val,
+        epoch,
+    ):
+        self.stats["loss_tr"] = [round(loss_tr, 6)]
+        self.stats["loss_val"] = [round(loss_val, 6)]
+        self.stats["acc_tr"] = [round(acc_tr, 3)]
+        self.stats["acc_val"] = [round(acc_val, 3)]
+        self.stats["balanced_acc_tr"] = [round(balanced_acc_tr, 3)]
+        self.stats["balanced_acc_val"] = [round(balanced_acc_val, 3)]
+        self.stats["epoch"] = [epoch]
+
+    def colum_order(self):
+        return [
+            "sbj",
+            "model_name",
+            "CV",
+            "behavior",
+            "epoch",
+            "acc_tr",
+            "acc_val",
+            "balanced_acc_tr",
+            "balanced_acc_val",
+            "loss_tr",
+            "loss_val",
+            "config",
+        ]
+
+    def save(self) -> None:
+        if not self.record_history_filepath.exists():
+            df = pd.DataFrame(self.stats)
+        else:
+            df = pd.read_csv(self.record_history_filepath)
+            for key in self.stats.keys():
+                if key not in df.columns:
+                    df[key] = ["None"] * len(df)
+            df = pd.concat([df, pd.DataFrame(self.stats)], ignore_index=True)
+        df = df[self.colum_order()]
+        df.to_csv(self.record_history_filepath, index=False)
+        cprint(f"Saved training history to {self.record_history_filepath}", "green")
 
 
 def fit_decoder_CV(args: DictConfig, dataset: EEGDataset | EMGDataset) -> None:

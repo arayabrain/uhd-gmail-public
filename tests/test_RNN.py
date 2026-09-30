@@ -9,10 +9,7 @@ class TestMultiLayerRNN(unittest.TestCase):
     def setUp(
         self,
     ):
-        gpu = 0
-        self.device = torch.device(
-            f"cuda:{gpu}" if torch.cuda.is_available() else "cpu"
-        )
+        self.device = torch.device("cpu")
         self.input_size = 128
         self.hidden_size = 256
         self.num_layers = 3
